@@ -1,10 +1,12 @@
 #include <iostream>
+
 #include "../include/Renderer.h"
 
-int main() {
-    Renderer renderer {1, 22};
+int main()
+{
+    Renderer renderer { 80, 20 };
 
-    renderer.draw();
+    renderer.render();
 
     return 0;
 }

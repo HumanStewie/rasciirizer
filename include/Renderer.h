@@ -1,14 +1,23 @@
 #pragma once
+#include <cmath>
 #include <vector>
 class Renderer {
    private:
     int m_width {};
     int m_height {};
-    int m_fps{};
+    int m_length {};
+    double m_fps {};
+    std::vector<char> m_fb {};
+    std::vector<double> m_zb {};
 
    public:
-    Renderer(int wWidth = 1280, int wHeight = 720, int fps = 30)
-        : m_width { wWidth }, m_height { wHeight }, m_fps {fps}
+    Renderer(int wWidth = 80, int wHeight = 20, double fps = 30)
+        : m_width { wWidth },
+          m_height { wHeight },
+          m_fps { 1/(fps * 1000) },
+          m_length { m_width * m_height },
+          m_fb(m_length),
+          m_zb(m_length)
     {
     }
 
@@ -19,5 +28,4 @@ class Renderer {
     void framebuffer();
     void clear();
     void render();
-
 };
