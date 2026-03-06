@@ -1,10 +1,8 @@
-#include <iostream>
-
 #include "../include/Renderer.h"
 
 int main()
 {
-    Renderer renderer { 88, 20 };
+    Renderer renderer { 80, 20, 30 };
 
     renderer.render();
 
