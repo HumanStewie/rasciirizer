@@ -10,6 +10,7 @@ class Renderer {
     std::vector<char> m_fb {};
     std::vector<double> m_zb {};
     double theta {};
+    double PI { 3.14159265 };
 
    public:
     Renderer(int wWidth = 80, int wHeight = 20, double fps = 30)

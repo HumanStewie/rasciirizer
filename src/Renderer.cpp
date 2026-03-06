@@ -9,6 +9,7 @@
 
 #include "../include/Vector3D.h"
 
+// TODO: Handle CLIPPING
 void Renderer::draw()
 {
     // using clock = std::chrono::steady_clock;
@@ -18,12 +19,7 @@ void Renderer::draw()
     for (std::size_t i {}; i <= m_length; ++i) {
         // check if current char is the final char in the line or not
         // very clever trick used in Donut in C
-        if (i % m_width) {
-            std::cout << m_fb[i];
-        }
-        else {
-            std::cout << '\n';
-        }
+        std::cout << (i % m_width ? m_fb[i] : '\n');
     }
 
     // sleep timer based on FPS, limiting FPS
@@ -40,17 +36,14 @@ void Renderer::draw()
 
 void Renderer::framebuffer(double A)
 {
-    double K1 {};
-    for (double i {}; i < m_height; ++i) {
-        for (double j {}; j < m_width; ++j) {
-            Vector3D vec { j, i, 5 };
-            double ooz { 1 / vec.z };
+    for (double x {-2}; x <= 2; x += 0.5) {
+        double y { std::sqrt(4 - std::pow(x, 2)) };
+        Vector3D vec { x, y, 0.3 };
+        double ooz { 1 / vec.z };
 
-            Vector3D projVec { j * ooz, i * ooz, vec.z - A };
-
-            int rast { static_cast<int>(projVec.x + m_width * projVec.y) };
-            if ((vec.y == 10 && vec.x == 15)) m_fb[rast] = '#';
-        }
+        Vector3D projV { 40 + vec.x * ooz, 10 + vec.y * ooz, vec.z };
+        int out { static_cast<int>(projV.x + m_width * projV.y) }; // wrong type
+        m_fb[out] = '#';
     }
 }
 
@@ -63,13 +56,7 @@ void Renderer::clear()
 void Renderer::render()
 {
     double A { 5 };
-    while (true) {
-        clear();
-        framebuffer(A);
-        draw();
-        if (A > 0)
-            A -= 0.0003;
-        else
-            A = 0;
-    }
+    clear();
+    framebuffer(A);
+    draw();
 }
