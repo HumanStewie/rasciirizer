@@ -4,7 +4,7 @@
 
 int main()
 {
-    Renderer renderer { 80, 20 };
+    Renderer renderer { 88, 20 };
 
     renderer.render();
 

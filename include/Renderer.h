@@ -14,7 +14,7 @@ class Renderer {
     Renderer(int wWidth = 80, int wHeight = 20, double fps = 30)
         : m_width { wWidth },
           m_height { wHeight },
-          m_fps { 1/(fps * 1000) },
+          m_fps { 1 / (fps * 1000) },
           m_length { m_width * m_height },
           m_fb(m_length),
           m_zb(m_length)
@@ -25,7 +25,7 @@ class Renderer {
     int getWindowHeight() { return m_height; }
 
     void draw();
-    void framebuffer();
+    void framebuffer(float A = 0, float B = 0);
     void clear();
     void render();
 };
