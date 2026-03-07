@@ -9,7 +9,14 @@
 
 #include "../include/Vector3D.h"
 
-// TODO: Handle CLIPPING
+/** TODO:
+ * - Handle CLIPPING - Partially done, just have a if-else
+ * - Work on luminence
+ * - Fix FPS problems
+ * - Make modular, as in pass any std::vector<Vector3D> Vertex Buffer into our 
+ * renderer and it will work
+ */
+
 void Renderer::draw()
 {
     // using clock = std::chrono::steady_clock;

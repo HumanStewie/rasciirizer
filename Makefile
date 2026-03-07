@@ -1,0 +1,1 @@
+g++ -o build/main src/main.cpp src/Renderer.cpp src/Vector3D.cpp
