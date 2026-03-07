@@ -27,7 +27,7 @@ class Renderer {
     int getWindowHeight() { return m_height; }
 
     void draw();
-    void framebuffer(double A);
+    void framebuffer(double A, double B);
     void clear();
     void render();
 };

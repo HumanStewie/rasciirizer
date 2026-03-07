@@ -13,7 +13,7 @@
  * - Handle CLIPPING - Partially done, just have a if-else
  * - Work on luminence
  * - Fix FPS problems
- * - Make modular, as in pass any std::vector<Vector3D> Vertex Buffer into our 
+ * - Make modular, as in pass any std::vector<Vector3D> Vertex Buffer into our
  * renderer and it will work
  */
 
@@ -40,21 +40,30 @@ void Renderer::draw()
     sleep(1 / m_fps);
 }
 
-void Renderer::framebuffer(double A)
+void Renderer::framebuffer(double A, double B)
 {
-    for (double x { -3 }; x <= 3; x += 0.01) {
-        double sinZ { sin(A) };
-        double cosZ { cos(A) };
-        double y { std::sqrt(9 - std::pow(x, 2)) };
-        Vector3D vec { x*cosZ , y, cosZ };
-        double ooz { 1 / vec.z };
-
-        Vector3D projV { 40 + 2.2 * vec.x * ooz, 10 + vec.y * ooz, vec.z };
-        int out { static_cast<int>(projV.x) +
-                  m_width * static_cast<int>(projV.y) };
-        if (projV.x > 0 && projV.y > 0 && vec.z > 0.2) {
-            m_fb[out]        = '#';
-            m_fb[1599 - out] = '#';
+    for (double j {}; j < 8.28; j += 0.07) {
+        for (double i {}; i < 8.28; i += 0.02) {
+            float c = sin(i);
+            float d = cos(j);
+            float e = sin(A);
+            float f = sin(j);
+            float g = cos(A);
+            float h = d + 2;
+            float D = 1 / (c * h * e + f * g + 5);
+            float l = cos(i);
+            float m = cos(B);
+            float n = sin(B);
+            float t = c * h * g - f * e;
+            int x   = 40 + 2.2 * D * (l * h * m - t * n);
+            int y   = 10 +  D * (l * h * n + t * m);
+            int o   = x + 80 * y;
+            int N =
+                8 * ((f * e - c * d * g) * m - c * d * e - f * g - l * d * n);
+            if (22 > y && y > 0 && x > 0 && 80 > x && D > m_zb[o]) {
+                m_zb[o] = D;
+                m_fb[o] = ".,-~:;=!*#$@"[N > 0 ? N : 0];
+            }
         }
     }
 }
@@ -68,12 +77,14 @@ void Renderer::clear()
 void Renderer::render()
 {
     double A {};
+    double B {};
     while (true) {
         std::cout << "\x1b[2J\x1b[1;1H";
 
         clear();
-        framebuffer(A);
+        framebuffer(A, B);
         draw();
-        A += 0.04;
+        A += 0.007;
+        B += 0.003;
     }
 }
