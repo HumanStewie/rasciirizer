@@ -18,6 +18,13 @@ class Matrix {
           m_rowSize { dimensionY }
     {
     }
+    Matrix(Vector3D row1, Vector3D row2, Vector3D row3)
+        : m_mat {
+              row1.x, row1.y, row1.z, row2.x, row2.y,
+              row2.z, row3.x, row3.y, row3.z,
+          }
+    {
+    }
 
     Vector3D mulMatrixVector3D(const Vector3D& vec)
     {

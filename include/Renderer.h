@@ -1,6 +1,8 @@
 #pragma once
 #include <cmath>
 #include <vector>
+
+#include "Vector3D.h"
 class Renderer {
    private:
     int m_width {};
@@ -26,7 +28,8 @@ class Renderer {
     int getWindowHeight() { return m_height; }
 
     void draw();
-    void framebuffer(double A, double B);
+    void framebuffer(double A, double B, double C, const std::vector<Vector3D>& vertices);
     void clear();
-    void render();
+    void render(const std::vector<Vector3D>& vertices);
+    void drawLine(const std::vector<Vector3D>& vertices);
 };

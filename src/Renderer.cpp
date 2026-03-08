@@ -1,26 +1,20 @@
-#include <unistd.h>
-
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
-#include <ratio>
 #include <thread>
+#include <vector>
 
 #include "../include/Math.h"
 #include "../include/Matrix.h"
 #include "../include/Renderer.h"
 #include "../include/Vector2D.h"
-#include "../include/Vector3D.h"
 #include "../include/Vector4D.h"
 
 /** TODO:
- * - Handle CLIPPING - Partially done, just have a if-else
- * - Work on luminence
- * - Fix FPS problems
  * - Make modular, as in pass any std::vector<Vector3D> Vertex Buffer into our
  * renderer and it will work
- * - Make cube
+ * - Generalized wireframe renderer
  */
 
 void Renderer::draw()
@@ -32,88 +26,50 @@ void Renderer::draw()
     }
 }
 
-void Renderer::framebuffer(double A, double B)
-{
-    const double theta_spacing { 0.07 };
-    const double phi_spacing { 0.03 };
+void Renderer::drawLine(const std::vector<Vector3D>& vertices) {}
 
+void Renderer::framebuffer(double A, double B, double C,
+                           const std::vector<Vector3D>& vertices)
+{
     const double cosA { cos(A) };
     const double sinA { sin(A) };
     const double cosB { cos(B) };
     const double sinB { sin(B) };
+    const double cosC { cos(C) };
+    const double sinC { sin(C) };
 
-    Matrix rotateX { 3, 3 };
-    rotateX.setIndex(0) = 1;
-    rotateX.setIndex(4) = cosA;
-    rotateX.setIndex(5) = sinA;
-    rotateX.setIndex(7) = -sinA;
-    rotateX.setIndex(8) = cosA;
-    Matrix rotateZ { 3, 3 };
-    rotateZ.setIndex(0) = cosB;
-    rotateZ.setIndex(1) = sinB;
-    rotateZ.setIndex(3) = -sinB;
-    rotateZ.setIndex(4) = cosB;
-    rotateZ.setIndex(8) = 1;
+    Matrix rotationMatrix { { cosA * cosB, cosA * sinB * sinC - sinA * cosC,
+                              cosA * sinB * cosC + sinA * sinC },
+                            { sinA * cosB, sinA * sinB * sinC + cosA * cosC,
+                              sinA * sinB * cosC - cosA * sinC },
+                            { -sinB, cosB * sinC, cosB * cosC } };
 
-    Matrix rotateXZ { rotateX.mulMatrix33(rotateZ.getMat()) };
-
-    const double R1 { 1 };
-    const double R2 { 2 };
-    const double K2 { 6 };  // How far we want to push object back
-
+    const double K2 { 5 };  // How far we want to push object back
     // Uses the calculation from Donut in C to ensure 3/8th screen coverage
     // (75%)
-    const double K1 { (K2 * m_width * 1) / (13 * (R1 + R2)) };
+    // This is also called "focal length"
+    const double objectWidth {2};
+    const double K1 { (K2 * m_width * 3) / (8 * objectWidth) };
 
-    // These loops draw to a local space
-    for (double theta {}; theta < 2 * PI; theta += theta_spacing) {
-        const double cosTheta { cos(theta) };
-        const double sinTheta { sin(theta) };
-        for (double phi {}; phi < 2 * PI; phi += phi_spacing) {
-            const double cosPhi { cos(phi) };
-            const double sinPhi { sin(phi) };
+    for (auto vertex : vertices) {
+        Vector3D rotateVertex { rotationMatrix.mulMatrixVector3D(vertex) };
+        rotateVertex.z += K2;
 
-            const double circleX { R2 + R1 * cosTheta };
-            const double circleY { R1 * sinTheta };
-            // Calculate donut rotation
-            const Vector3D rotateTorus {
-                circleX * (cosB * cosPhi + sinA * sinB * sinPhi) -
-                    circleY * cosA * sinB,
-                circleX * (cosB * cosPhi - sinA * cosB * sinPhi) +
-                    circleY * cosA * sinB,
-                K2 + cosA * circleX * sinPhi + circleY * sinA
-            };
-            
+        double ooz { 1 / rotateVertex.z };
 
-            // Calculate illumination
-            double light { cosPhi * cosTheta * sinB - cosA * cosTheta * sinPhi -
-                           sinA * sinTheta +
-                           cosB *
-                               (cosA * sinTheta - cosTheta * sinA * sinPhi) };
+        Vector2D<int> projVertex {
+            static_cast<int>((m_width / 2) +
+                             0.7 * m_width * ooz * rotateVertex.x),
+            static_cast<int>((m_height / 2 + m_height * ooz * rotateVertex.y))
+        };
+        int output { projVertex.x + m_width * projVertex.y };
 
-            double ooz { 1 / rotateTorus.z };
-            int torusXP { static_cast<int>(40 +
-                                           2.2 * K1 * rotateTorus.x * ooz) };
-            int torusYP { static_cast<int>(10 - K1 * rotateTorus.y * ooz) };
-
-            Vector2D<int> projVector { torusXP, torusYP };
-
-            int output { projVector.x + m_width * projVector.y };
-            if (light > 0) {
-                if (output < m_length && output >= 0) {
-                    if (ooz > m_zb[output] && projVector.x > 0 &&
-                        projVector.x < m_width && projVector.y > 0 &&
-                        projVector.y < m_height) {
-                        m_zb[output] = ooz;
-                        int lightIndex {
-                            static_cast<int>(light * 8)
-                        };  // light goes from -sqrt(2) to sqrt(2), we pick 1
-                            // out of 11 char ".,-~:;=!*#$@", so we 8*sqrt(2)
-                            // ~= 11.3
-
-                        m_fb[output] = ".,-~:;=!*#$@"[lightIndex];
-                    }
-                }
+        if (output > 0 && output < m_length && projVertex.x > 0 &&
+            projVertex.x < m_width && projVertex.y > 0 &&
+            projVertex.y < m_height) {
+            if (ooz > m_zb[output]) {
+                m_zb[output] = ooz;
+                m_fb[output] = '@';
             }
         }
     }
@@ -126,16 +82,18 @@ void Renderer::clear()
     std::fill(m_zb.begin(), m_zb.end(), 0);
 }
 
-void Renderer::render()
+void Renderer::render(const std::vector<Vector3D>& vertices)
 {
     double A {};
     double B {};
+    double C {};
     while (true) {
         clear();
-        framebuffer(A, B);
+        framebuffer(A, B, C, vertices);
         draw();
         A += 0.07;
-        B += 0.03;
+        B += 0.07;
+        C += 0.07;
         std::this_thread::sleep_for(std::chrono::milliseconds(1000 / m_fps));
     }
 }
