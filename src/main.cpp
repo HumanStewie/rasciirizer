@@ -2,7 +2,7 @@
 
 int main()
 {
-    Renderer renderer { 80, 20, 1 };
+    Renderer renderer { 80, 20, 30 };
 
     renderer.render();
 

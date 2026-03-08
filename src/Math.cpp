@@ -1,5 +1,4 @@
-#include "../include/Vector3D.h"
-
+#include "../include/Math.h"
 #include <cmath>
 
 Vector3D addVec3(const Vector3D& v1, const Vector3D& v2)

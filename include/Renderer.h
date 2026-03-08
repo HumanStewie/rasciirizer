@@ -6,14 +6,13 @@ class Renderer {
     int m_width {};
     int m_height {};
     int m_length {};
-    double m_fps {};
+    int m_fps {};
     std::vector<char> m_fb {};
     std::vector<double> m_zb {};
-    double theta {};
-    double PI { 3.14159265 };
+    double PI { 3.1415926 };
 
    public:
-    Renderer(int wWidth = 80, int wHeight = 20, double fps = 30)
+    Renderer(int wWidth = 80, int wHeight = 20, int fps = 30)
         : m_width { wWidth },
           m_height { wHeight },
           m_fps { fps },
