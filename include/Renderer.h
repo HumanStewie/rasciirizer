@@ -7,8 +7,8 @@ class Renderer {
    private:
     int m_width {};
     int m_height {};
-    int m_length {};
     int m_fps {};
+    int m_length {};
     std::vector<char> m_fb {};
     std::vector<double> m_zb {};
     double PI { 3.1415926 };
@@ -28,8 +28,10 @@ class Renderer {
     int getWindowHeight() { return m_height; }
 
     void draw();
-    void framebuffer(double A, double B, double C, const std::vector<Vector3D>& vertices);
+    void framebuffer(double A, double B, double C,
+                     const std::vector<Vector3D>& vertices);
     void clear();
     void render(const std::vector<Vector3D>& vertices);
-    void drawLine(const std::vector<Vector3D>& vertices);
+    const std::vector<Vector3D> drawLine(const Vector3D& point1,
+                                          const Vector3D& point2);
 };

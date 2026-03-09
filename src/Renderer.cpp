@@ -1,3 +1,5 @@
+#include "../include/Renderer.h"
+
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -7,7 +9,6 @@
 
 #include "../include/Math.h"
 #include "../include/Matrix.h"
-#include "../include/Renderer.h"
 #include "../include/Vector2D.h"
 #include "../include/Vector4D.h"
 
@@ -26,11 +27,31 @@ void Renderer::draw()
     }
 }
 
-void Renderer::drawLine(const std::vector<Vector3D>& vertices) {}
+const std::vector<Vector3D> Renderer::drawLine(const Vector3D& point1,
+                                               const Vector3D& point2)
+{
+    Vector3D vec { point2.x - point1.x, point2.y - point1.y,
+                   point2.z - point1.z };
+
+    std::vector<Vector3D> line {};
+    for (double step {}; step < lengthVec3(normalizeVec3(vec)); step += 0.050) {
+        Vector3D pointAtStep { point1.x + vec.x * step, point1.y + vec.y * step,
+                               point1.z + vec.z * step };
+        line.push_back(pointAtStep);
+    }
+    return line;
+}
 
 void Renderer::framebuffer(double A, double B, double C,
                            const std::vector<Vector3D>& vertices)
 {
+    // Terrible implementation
+    // std::vector<Vector3D> newVertices {vertices};
+    // for (std::size_t vertex{}; vertex < newVertices.size() - 1; ++vertex) {
+    //     const std::vector<Vector3D> line {drawLine(newVertices[vertex],
+    //     newVertices[vertex + 1])}; newVertices.insert(newVertices.end(),
+    //     line.begin(), line.end());
+    // }
     const double cosA { cos(A) };
     const double sinA { sin(A) };
     const double cosB { cos(B) };
@@ -48,10 +69,10 @@ void Renderer::framebuffer(double A, double B, double C,
     // Uses the calculation from Donut in C to ensure 3/8th screen coverage
     // (75%)
     // This is also called "focal length"
-    const double objectWidth {2};
+    const double objectWidth { 2 };
     const double K1 { (K2 * m_width * 3) / (8 * objectWidth) };
 
-    for (auto vertex : vertices) {
+    for (const auto& vertex : vertices) {
         Vector3D rotateVertex { rotationMatrix.mulMatrixVector3D(vertex) };
         rotateVertex.z += K2;
 
@@ -84,12 +105,21 @@ void Renderer::clear()
 
 void Renderer::render(const std::vector<Vector3D>& vertices)
 {
+    std::vector<Vector3D> newVertices { vertices };
+    for (std::size_t vertex {}; vertex < vertices.size() - 1; ++vertex) {
+        const std::vector<Vector3D> line { drawLine(newVertices[vertex],
+                                                    newVertices[vertex + 1]) };
+        for (const auto& e : line) {
+            newVertices.push_back(e);
+        }
+    }
+
     double A {};
     double B {};
     double C {};
     while (true) {
         clear();
-        framebuffer(A, B, C, vertices);
+        framebuffer(A, B, C, newVertices);
         draw();
         A += 0.07;
         B += 0.07;
