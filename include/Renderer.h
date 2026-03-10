@@ -31,7 +31,7 @@ class Renderer {
     void framebuffer(double A, double B, double C,
                      const std::vector<Vector3D>& vertices);
     void clear();
-    void render(const std::vector<Vector3D>& vertices);
+    void render(const std::vector<Vector3D>& vertices, const std::vector<std::vector<int>>& fs);
     const std::vector<Vector3D> drawLine(const Vector3D& point1,
                                           const Vector3D& point2);
 };

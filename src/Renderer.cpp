@@ -10,7 +10,6 @@
 #include "../include/Math.h"
 #include "../include/Matrix.h"
 #include "../include/Vector2D.h"
-#include "../include/Vector4D.h"
 
 /** TODO:
  * - Make modular, as in pass any std::vector<Vector3D> Vertex Buffer into our
@@ -80,7 +79,7 @@ void Renderer::framebuffer(double A, double B, double C,
 
         Vector2D<int> projVertex {
             static_cast<int>((m_width / 2) +
-                             0.7 * m_width * ooz * rotateVertex.x),
+                             0.6 * m_width * ooz * rotateVertex.x),
             static_cast<int>((m_height / 2 + m_height * ooz * rotateVertex.y))
         };
         int output { projVertex.x + m_width * projVertex.y };
@@ -90,7 +89,7 @@ void Renderer::framebuffer(double A, double B, double C,
             projVertex.y < m_height) {
             if (ooz > m_zb[output]) {
                 m_zb[output] = ooz;
-                m_fb[output] = '@';
+                m_fb[output] = '*';
             }
         }
     }
@@ -103,16 +102,23 @@ void Renderer::clear()
     std::fill(m_zb.begin(), m_zb.end(), 0);
 }
 
-void Renderer::render(const std::vector<Vector3D>& vertices)
+void Renderer::render(const std::vector<Vector3D>& vertices,
+                      const std::vector<std::vector<int>>& fs)
 {
     std::vector<Vector3D> newVertices { vertices };
-    for (std::size_t vertex {}; vertex < vertices.size() - 1; ++vertex) {
-        const std::vector<Vector3D> line { drawLine(newVertices[vertex],
-                                                    newVertices[vertex + 1]) };
-        for (const auto& e : line) {
-            newVertices.push_back(e);
+    for (const auto& face : fs) {
+        for (std::size_t point {}; point < face.size(); ++point) {
+            std::vector<Vector3D> line { drawLine(
+                newVertices[face[point]],
+                newVertices[face[(point + 1) % face.size()]]) };
+
+            for (const auto& e : line) {
+                newVertices.push_back(e);
+            }
         }
     }
+
+    
 
     double A {};
     double B {};
