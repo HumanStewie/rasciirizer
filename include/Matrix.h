@@ -2,14 +2,18 @@
 #include <cassert>
 #include <vector>
 
-#include "Vector3D.h"
-#include "Vector4D.h"
+#include "Vector.h"
 
+/**
+ * @class Matrix
+ * @brief Initialize a matrix with its dimension or with specified elements
+ *
+ */
 class Matrix {
    private:
     unsigned int m_rowSize {};
     unsigned int m_colSize {};
-    std::vector<double> m_mat {};
+    std::vector<float> m_mat {};
 
    public:
     Matrix(unsigned int dimensionX, unsigned int dimensionY)
@@ -18,7 +22,7 @@ class Matrix {
           m_rowSize { dimensionY }
     {
     }
-    Matrix(Vector3D row1, Vector3D row2, Vector3D row3)
+    Matrix(Vector::Vector3D<float> row1, Vector::Vector3D<float> row2, Vector::Vector3D<float> row3)
         : m_mat {
               row1.x, row1.y, row1.z, row2.x, row2.y,
               row2.z, row3.x, row3.y, row3.z,
@@ -26,7 +30,7 @@ class Matrix {
     {
     }
 
-    Vector3D mulMatrixVector3D(const Vector3D& vec)
+    Vector::Vector3D<float> mulMatrixVector3D(const Vector::Vector3D<float>& vec)
     {
         assert(m_mat.size() == 9);
         return { m_mat[0] * vec.x + m_mat[1] * vec.y + m_mat[2] * vec.z,
@@ -34,7 +38,7 @@ class Matrix {
                  m_mat[6] * vec.x + m_mat[7] * vec.y + m_mat[8] * vec.z };
     }
 
-    Vector4D mulMatrixVector4D(const Vector4D& vec)
+    Vector::Vector4D<float> mulMatrixVector4D(const Vector::Vector4D<float>& vec)
     {
         assert(m_mat.size() == 16);
         return { m_mat[0] * vec.x + m_mat[1] * vec.y + m_mat[2] * vec.z +
@@ -47,7 +51,7 @@ class Matrix {
                      m_mat[15] * vec.w };
     }
 
-    Matrix mulMatrix33(const std::vector<double>& other_mat)
+    Matrix mulMatrix33(const std::vector<float>& other_mat)
     {
         Matrix new_mat { 3, 3 };
 
@@ -75,6 +79,6 @@ class Matrix {
         return new_mat;
     }
 
-    double& setIndex(unsigned int index) { return m_mat[index]; }
-    const std::vector<double> getMat() { return m_mat; }
+    float& setIndex(unsigned int index) { return m_mat[index]; }
+    const std::vector<float> getMat() { return m_mat; }
 };

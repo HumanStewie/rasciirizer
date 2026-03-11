@@ -1,18 +1,16 @@
 #pragma once
 
-#include "Vector3D.h"
+#include "Vector.h"
 
-
-Vector3D addVec3(const Vector3D& v1, const Vector3D& v2);
-
-Vector3D subtrVec3(const Vector3D& v1, const Vector3D& v2);
-
-Vector3D multiVec3(const Vector3D& v1, double scalar);
-
-double dotVec3(const Vector3D& v1, const Vector3D& v2);
-
-Vector3D crossVec3(const Vector3D& v1, const Vector3D& v2);
-
-double lengthVec3(const Vector3D& v);
-
-Vector3D normalizeVec3(const Vector3D& v);
+Vector::Vector3D<float> addVec3(const Vector::Vector3D<float>& v1,
+                                const Vector::Vector3D<float>& v2);
+Vector::Vector3D<float> subtrVec3(const Vector::Vector3D<float>& v1,
+                                  const Vector::Vector3D<float>& v2);
+Vector::Vector3D<float> multiVec3(const Vector::Vector3D<float>& v1,
+                                  float scalar);
+float dotVec3(const Vector::Vector3D<float>& v1,
+              const Vector::Vector3D<float>& v2);
+Vector::Vector3D<float> crossVec3(const Vector::Vector3D<float>& v1,
+                                  const Vector::Vector3D<float>& v2);
+float lengthVec3(const Vector::Vector3D<float>& v);
+Vector::Vector3D<float> normalizeVec3(const Vector::Vector3D<float>& v);

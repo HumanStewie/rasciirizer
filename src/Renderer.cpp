@@ -9,11 +9,9 @@
 
 #include "../include/Math.h"
 #include "../include/Matrix.h"
-#include "../include/Vector2D.h"
+#include "../include/Vector.h"
 
 /** TODO:
- * - Make modular, as in pass any std::vector<Vector3D> Vertex Buffer into our
- * renderer and it will work
  * - Generalized wireframe renderer
  */
 
@@ -26,23 +24,26 @@ void Renderer::draw()
     }
 }
 
-const std::vector<Vector3D> Renderer::drawLine(const Vector3D& point1,
-                                               const Vector3D& point2)
+const std::vector<Vector::Vector3D<float>> Renderer::drawLine(
+    const Vector::Vector3D<float>& point1,
+    const Vector::Vector3D<float>& point2)
 {
-    Vector3D vec { point2.x - point1.x, point2.y - point1.y,
-                   point2.z - point1.z };
+    // 3D DDA Algorithm
+    Vector::Vector3D<float> vec { point2.x - point1.x, point2.y - point1.y,
+                                  point2.z - point1.z };
 
-    std::vector<Vector3D> line {};
-    for (double step {}; step < lengthVec3(normalizeVec3(vec)); step += 0.050) {
-        Vector3D pointAtStep { point1.x + vec.x * step, point1.y + vec.y * step,
-                               point1.z + vec.z * step };
+    std::vector<Vector::Vector3D<float>> line {};
+    for (float step {}; step < lengthVec3(normalizeVec3(vec)); step += 0.050) {
+        Vector::Vector3D<float> pointAtStep { point1.x + vec.x * step,
+                                              point1.y + vec.y * step,
+                                              point1.z + vec.z * step };
         line.push_back(pointAtStep);
     }
     return line;
 }
 
-void Renderer::framebuffer(double A, double B, double C,
-                           const std::vector<Vector3D>& vertices)
+void Renderer::framebuffer(float A, float B, float C,
+                           const std::vector<Vector::Vector3D<float>>& vertices)
 {
     // Terrible implementation
     // std::vector<Vector3D> newVertices {vertices};
@@ -51,12 +52,12 @@ void Renderer::framebuffer(double A, double B, double C,
     //     newVertices[vertex + 1])}; newVertices.insert(newVertices.end(),
     //     line.begin(), line.end());
     // }
-    const double cosA { cos(A) };
-    const double sinA { sin(A) };
-    const double cosB { cos(B) };
-    const double sinB { sin(B) };
-    const double cosC { cos(C) };
-    const double sinC { sin(C) };
+    const float cosA { static_cast<float>(cos(A)) };
+    const float sinA { static_cast<float>(sin(A)) };
+    const float cosB { static_cast<float>(cos(B)) };
+    const float sinB { static_cast<float>(sin(B)) };
+    const float cosC { static_cast<float>(cos(C)) };
+    const float sinC { static_cast<float>(sin(C)) };
 
     Matrix rotationMatrix { { cosA * cosB, cosA * sinB * sinC - sinA * cosC,
                               cosA * sinB * cosC + sinA * sinC },
@@ -64,23 +65,25 @@ void Renderer::framebuffer(double A, double B, double C,
                               sinA * sinB * cosC - cosA * sinC },
                             { -sinB, cosB * sinC, cosB * cosC } };
 
-    const double K2 { 5 };  // How far we want to push object back
+    const float K2 { 5 };  // How far we want to push object back
     // Uses the calculation from Donut in C to ensure 3/8th screen coverage
     // (75%)
     // This is also called "focal length"
-    const double objectWidth { 2 };
-    const double K1 { (K2 * m_width * 3) / (8 * objectWidth) };
+    const float objectWidth { 2 };
+    const float K1 { (K2 * m_width * 3) / (8 * objectWidth) };
 
     for (const auto& vertex : vertices) {
-        Vector3D rotateVertex { rotationMatrix.mulMatrixVector3D(vertex) };
+        Vector::Vector3D rotateVertex { rotationMatrix.mulMatrixVector3D(
+            vertex) };
         rotateVertex.z += K2;
 
-        double ooz { 1 / rotateVertex.z };
+        float ooz { 1 / rotateVertex.z };
 
-        Vector2D<int> projVertex {
-            static_cast<int>((m_width / 2) +
+        Vector::Vector2D<int> projVertex {
+            static_cast<int>((static_cast<float>((m_width)) / 2) +
                              0.6 * m_width * ooz * rotateVertex.x),
-            static_cast<int>((m_height / 2 + m_height * ooz * rotateVertex.y))
+            static_cast<int>((static_cast<float>((m_height)) / 2 +
+                              m_height * ooz * rotateVertex.y))
         };
         int output { projVertex.x + m_width * projVertex.y };
 
@@ -102,13 +105,13 @@ void Renderer::clear()
     std::fill(m_zb.begin(), m_zb.end(), 0);
 }
 
-void Renderer::render(const std::vector<Vector3D>& vertices,
+void Renderer::render(const std::vector<Vector::Vector3D<float>>& vertices,
                       const std::vector<std::vector<int>>& fs)
 {
-    std::vector<Vector3D> newVertices { vertices };
+    std::vector<Vector::Vector3D<float>> newVertices { vertices };
     for (const auto& face : fs) {
         for (std::size_t point {}; point < face.size(); ++point) {
-            std::vector<Vector3D> line { drawLine(
+            std::vector<Vector::Vector3D<float>> line { drawLine(
                 newVertices[face[point]],
                 newVertices[face[(point + 1) % face.size()]]) };
 
@@ -118,11 +121,9 @@ void Renderer::render(const std::vector<Vector3D>& vertices,
         }
     }
 
-    
-
-    double A {};
-    double B {};
-    double C {};
+    float A {};
+    float B {};
+    float C {};
     while (true) {
         clear();
         framebuffer(A, B, C, newVertices);

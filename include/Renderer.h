@@ -2,7 +2,7 @@
 #include <cmath>
 #include <vector>
 
-#include "Vector3D.h"
+#include "Vector.h"
 class Renderer {
    private:
     int m_width {};
@@ -10,8 +10,8 @@ class Renderer {
     int m_fps {};
     int m_length {};
     std::vector<char> m_fb {};
-    std::vector<double> m_zb {};
-    double PI { 3.1415926 };
+    std::vector<float> m_zb {};
+    float PI { 3.1415926 };
 
    public:
     Renderer(int wWidth = 80, int wHeight = 20, int fps = 30)
@@ -28,10 +28,11 @@ class Renderer {
     int getWindowHeight() { return m_height; }
 
     void draw();
-    void framebuffer(double A, double B, double C,
-                     const std::vector<Vector3D>& vertices);
+    void framebuffer(float A, float B, float C,
+                     const std::vector<Vector::Vector3D<float>>& vertices);
     void clear();
-    void render(const std::vector<Vector3D>& vertices, const std::vector<std::vector<int>>& fs);
-    const std::vector<Vector3D> drawLine(const Vector3D& point1,
-                                          const Vector3D& point2);
+    void render(const std::vector<Vector::Vector3D<float>>& vertices,
+                const std::vector<std::vector<int>>& fs);
+    const std::vector<Vector::Vector3D<float>> drawLine(
+        const Vector::Vector3D<float>& point1, const Vector::Vector3D<float>& point2);
 };
