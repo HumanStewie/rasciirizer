@@ -8,11 +8,13 @@ software "renderer" (more correctly rasterizer) for ASCII art given vertices and
 `#include` or write your own vertices and face data in `src/main.cpp` and run:
 
 ```bash
-make renderer
-./build/ascii
+mkdir build && cd build
 
-# If you want to clean up all executables
-make clean
+cmake ..
+
+cmake --build . (--clean-first) # Run with --clean-first if you want to clean up build files
+
+./rasciirizer
 ```
 
 You can change output settings by changing the first parameter of `render()`. More work will be made on making that more customizable and modular.
