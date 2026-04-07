@@ -8,11 +8,14 @@ software "renderer" (more correctly rasterizer) for ASCII art given vertices and
 `#include` or write your own vertices and face data in `src/main.cpp` and run:
 
 ```bash
-mkdir build && cd build
+cmake -B build # Debug version
+cmake -B build -DCMAKE_BUILD_TYPE=Release # Release version
 
-cmake ..
+# Debug version
+cmake --build build (--clean-first) # Run with --clean-first if you want to clean up build files
 
-cmake --build . (--clean-first) # Run with --clean-first if you want to clean up build files
+# Release version
+cmake --build build --config Release
 
 ./rasciirizer
 ```
@@ -71,3 +74,4 @@ Surely, there are more, but i have yet to gain the knowledge of C++ itself to us
 - Fix scaling issue
 - Make renderer more modular
 - Projection scaling issues
+
