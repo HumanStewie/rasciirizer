@@ -17,7 +17,7 @@ cmake --build build (--clean-first) # Run with --clean-first if you want to clea
 # Release version
 cmake --build build --config Release
 
-./rasciirizer
+./build/rasciirizer
 ```
 
 You can change output settings by changing the first parameter of `render()`. More work will be made on making that more customizable and modular.
