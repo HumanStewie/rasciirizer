@@ -15,13 +15,13 @@
  * - Still have optimization available, ill get to that after my work
  */
 
-void Renderer::draw()
+void Renderer::draw() const
 {
     for (std::size_t i {}; i <= m_length; ++i) {
         // check if current char is the final char in the line or not
         // very clever trick used in Donut in C
         // you could also just use 2 loops
-        std::cout << (i % m_width ? m_fb[i] : '\n');
+        std::cout << (i % static_cast<std::size_t>(m_width) ? m_fb[i] : '\n');
     }
 }
 
@@ -45,19 +45,29 @@ void Renderer::drawLine(const Vector::Vector3D<float>& point1,
         vertices.push_back(e);
     }
 }
+void Renderer::drawLine(const Vector::Vector2D<int>& point1,
+                        const Vector::Vector2D<int>& point2,
+                        std::vector<Vector::Vector2D<int>>& vertices)
+{
+    // 3D DDA Algorithm
+    Vector::Vector3D<int> vec { point2.x - point1.x, point2.y - point1.y };
+
+    std::vector<Vector::Vector2D<int>> line {};
+    for (float step {}; step < lengthVec3(normalizeVec3(vec)); step += 0.05f) {
+        Vector::Vector2D<float> pointAtStep { point1.x + vec.x * step,
+                                              point1.y + vec.y * step };
+        line.push_back(int);
+    }
+    // Why????
+    for (const auto& e : line) {
+        vertices.push_back(e);
+    }
+}
 
 void Renderer::framebuffer(float A, float B, float C,
                            const std::vector<Vector::Vector3D<float>>& vertices,
                            int vertSize)
 {
-    // Terrible implementation
-    // std::vector<Vector3D> newVertices {vertices};
-    // for (std::size_t vertex{}; vertex < newVertices.size() - 1; ++vertex) {
-    //     const std::vector<Vector3D> line {drawLine(newVertices[vertex],
-    //     newVertices[vertex + 1])}; newVertices.insert(newVertices.end(),
-    //     line.begin(), line.end());
-    // }
-
     // precompute sin cos of 3 dimensions
     const float cosA { static_cast<float>(cos(A)) };
     const float sinA { static_cast<float>(sin(A)) };
@@ -74,12 +84,14 @@ void Renderer::framebuffer(float A, float B, float C,
                               sinAsinB * cosC - cosA * sinC },
                             { -sinB, cosB * sinC, cosB * cosC } };
 
+
     // Uses the calculation from Donut in C to ensure 3/8th screen coverage
     // This is also called "focal length", which i didn't figured out how to
     // make it work. So i just made a small patch to it and pray it runs (line
     // 92) const float objectWidth { 1 }; const float K1 { ((m_depth + 1) *
     // m_width * 1) / (15 * objectWidth) };
 
+    std::vector<Vector::Vector2D<int>> projectedVertices { };
     int count {};
     for (const auto& vertex : vertices) {
         Vector::Vector3D rotateVertex { rotationMatrix.mulMatrixVector3D(
@@ -96,21 +108,31 @@ void Renderer::framebuffer(float A, float B, float C,
             static_cast<int>((static_cast<float>((m_height)) / 2) -
                              m_height * ooz * rotateVertex.y)
         };
+
+        // Mapping 2D position to a 1D array, making it projects properly in 2D
         int output { projVertex.x + m_width * projVertex.y };
 
         // populating buffer
         if (output > 0 && output < m_length && projVertex.x > 0 &&
             projVertex.x < m_width && projVertex.y > 0 &&
             projVertex.y < m_height) {
-            if (ooz > m_zb[output]) {
-                m_zb[output] = ooz;
-                m_fb[output] =
+            if (ooz > m_zb[static_cast<std::size_t>(output)]) {
+                // fill in lines here
+                projectedVertices.push_back(Vector::Vector2D<int>(projVertex.x, projVertex.y));
+                m_zb[static_cast<std::size_t>(output)] = ooz;
+                m_fb[static_cast<std::size_t>(output)] =
                     "*#"[count++ < vertSize ? 1 : 0];  // separate vertices and
-                                                       // edges it don't work
-                                                       // very well tho
+                                                        // edges it don't work
+                                                        // very well tho
+
             }
         }
     }
+    for (std::size_t vertex{}; vertex < projectedVertices.size(), ++vertex) {
+        drawLine(projectedVertices[vertex], projectedVertices[(vertex + 1) % projectedVertices.size()], projectedVertices);
+    }
+    // Mapping 2D position to a 1D array, making it projects properly in 2D
+    int output { projVertex.x + m_width * projVertex.y };
 }
 
 void Renderer::clear()

@@ -29,7 +29,7 @@ class Renderer {
     int getWindowWidth() { return m_width; }
     int getWindowHeight() { return m_height; }
 
-    void draw();
+    void draw()const;
     void framebuffer(float A, float B, float C,
                      const std::vector<Vector::Vector3D<float>>& vertices,
                      int vertSize);
@@ -39,4 +39,7 @@ class Renderer {
     void drawLine(const Vector::Vector3D<float>& point1,
                   const Vector::Vector3D<float>& point2,
                   std::vector<Vector::Vector3D<float>>& vertices);
-};
+    void drawLine(const Vector::Vector2D<int>& point1,
+                            const Vector::Vector2D<int>& point2,
+                            std::vector<Vector::Vector2D<int>>& vertices);
+    };
