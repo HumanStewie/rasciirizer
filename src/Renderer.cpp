@@ -14,8 +14,8 @@
 /** TODO:
  * - Still have optimization available, ill get to that after my work
  */
-
-void Renderer::draw() const
+template<int width, int height>
+void Renderer<width, height>::draw() const
 {
     for (std::size_t i {}; i <= m_length; ++i) {
         // check if current char is the final char in the line or not
@@ -25,65 +25,46 @@ void Renderer::draw() const
     }
 }
 
-void Renderer::drawLine(const Vector::Vector3D<float>& point1,
-                        const Vector::Vector3D<float>& point2,
-                        std::vector<Vector::Vector3D<float>>& vertices)
+template<int width, int height>
+void Renderer<width, height>::drawLine(const sgm::Vec3D& point1, const sgm::Vec3D& point2,
+                        std::vector<sgm::Vec3D>& vertices) const
 {
     // 3D DDA Algorithm
-    Vector::Vector3D<float> vec { point2.x - point1.x, point2.y - point1.y,
-                                  point2.z - point1.z };
+    sgm::Vec3D vec { point2.x - point1.x, point2.y - point1.y,
+                     point2.z - point1.z };
 
-    std::vector<Vector::Vector3D<float>> line {};
-    for (float step {}; step < lengthVec3(normalizeVec3(vec)); step += 0.05f) {
-        Vector::Vector3D<float> pointAtStep { point1.x + vec.x * step,
-                                              point1.y + vec.y * step,
-                                              point1.z + vec.z * step };
-        line.push_back(pointAtStep);
-    }
-    // Why????
-    for (const auto& e : line) {
-        vertices.push_back(e);
-    }
-}
-void Renderer::drawLine(const Vector::Vector2D<int>& point1,
-                        const Vector::Vector2D<int>& point2,
-                        std::vector<Vector::Vector2D<int>>& vertices)
-{
-    // 3D DDA Algorithm
-    Vector::Vector3D<int> vec { point2.x - point1.x, point2.y - point1.y };
-
-    std::vector<Vector::Vector2D<int>> line {};
-    for (float step {}; step < lengthVec3(normalizeVec3(vec)); step += 0.05f) {
-        Vector::Vector2D<float> pointAtStep { point1.x + vec.x * step,
-                                              point1.y + vec.y * step };
-        line.push_back(int);
-    }
-    // Why????
-    for (const auto& e : line) {
-        vertices.push_back(e);
+    for (float step {}; step < sgm::length(sgm::normalize(vec));
+         step += 0.05f) {
+        vertices.emplace_back(point1.x + vec.x * step,
+                             point1.y + vec.y * step,
+                             point1.z + vec.z * step );
     }
 }
 
-void Renderer::framebuffer(float A, float B, float C,
-                           const std::vector<Vector::Vector3D<float>>& vertices,
-                           int vertSize)
+template<int width, int height>
+void Renderer<width, height>::framebuffer(const float A, const float B, const float C,
+                           const std::vector<sgm::Vec3D>& vertices,
+                           const int vertSize)
 {
     // precompute sin cos of 3 dimensions
-    const float cosA { static_cast<float>(cos(A)) };
-    const float sinA { static_cast<float>(sin(A)) };
-    const float cosB { static_cast<float>(cos(B)) };
-    const float sinB { static_cast<float>(sin(B)) };
-    const float cosC { static_cast<float>(cos(C)) };
-    const float sinC { static_cast<float>(sin(C)) };
+    const float cosA { (std::cos(A)) };
+    const float sinA { (std::sin(A)) };
+    const float cosB { (std::cos(B)) };
+    const float sinB { (std::sin(B)) };
+    const float cosC { (std::cos(C)) };
+    const float sinC { (std::sin(C)) };
     const float cosAsinB { cosA * sinB };
     const float sinAsinB { sinA * sinB };
 
-    Matrix rotationMatrix { { cosA * cosB, cosAsinB * sinC - sinA * cosC,
-                              cosAsinB * cosC + sinA * sinC },
-                            { sinA * cosB, sinAsinB * sinC + cosA * cosC,
-                              sinAsinB * cosC - cosA * sinC },
-                            { -sinB, cosB * sinC, cosB * cosC } };
-
+    const sgm::Mat3D rotationMatrix { cosA * cosB,
+                                sinA * cosB,
+                                -sinB,
+                                cosAsinB * sinC - sinA * cosC,
+                                sinAsinB * sinC + cosA * cosC,
+                                cosB * sinC,
+                                cosAsinB * cosC + sinA * sinC,
+                                sinAsinB * cosC - cosA * sinC,
+                                cosB * cosC };
 
     // Uses the calculation from Donut in C to ensure 3/8th screen coverage
     // This is also called "focal length", which i didn't figured out how to
@@ -91,16 +72,15 @@ void Renderer::framebuffer(float A, float B, float C,
     // 92) const float objectWidth { 1 }; const float K1 { ((m_depth + 1) *
     // m_width * 1) / (15 * objectWidth) };
 
-    std::vector<Vector::Vector2D<int>> projectedVertices { };
+    // std::vector<sgm::Vec<int, 2>> projectedVertices {};
     int count {};
     for (const auto& vertex : vertices) {
-        Vector::Vector3D rotateVertex { rotationMatrix.mulMatrixVector3D(
-            vertex) };
+        sgm::Vec3D rotateVertex { vertex * rotationMatrix };
         rotateVertex.z += m_depth;
 
         // slight optimization by only doing 1 division instead of 2 every frame
         float ooz { 1 / rotateVertex.z };
-        Vector::Vector2D<int> projVertex {
+        const sgm::Vec<int, 2> projVertex {
             static_cast<int>(
                 (static_cast<float>((m_width)) / 2) +
                 0.6 * m_width * ooz *
@@ -118,39 +98,45 @@ void Renderer::framebuffer(float A, float B, float C,
             projVertex.y < m_height) {
             if (ooz > m_zb[static_cast<std::size_t>(output)]) {
                 // fill in lines here
-                projectedVertices.push_back(Vector::Vector2D<int>(projVertex.x, projVertex.y));
+                // projectedVertices.push_back(
+                //     sgm::Vec<int, 2>(projVertex.x, projVertex.y));
                 m_zb[static_cast<std::size_t>(output)] = ooz;
                 m_fb[static_cast<std::size_t>(output)] =
                     "*#"[count++ < vertSize ? 1 : 0];  // separate vertices and
-                                                        // edges it don't work
-                                                        // very well tho
-
+                                                       // edges it don't work
+                                                       // very well tho
             }
         }
     }
-    for (std::size_t vertex{}; vertex < projectedVertices.size(), ++vertex) {
-        drawLine(projectedVertices[vertex], projectedVertices[(vertex + 1) % projectedVertices.size()], projectedVertices);
-    }
-    // Mapping 2D position to a 1D array, making it projects properly in 2D
-    int output { projVertex.x + m_width * projVertex.y };
+    // for (std::size_t vertex {}; vertex < projectedVertices.size(), ++vertex)
+    // {
+    //     drawLine(projectedVertices[vertex],
+    //              projectedVertices[(vertex + 1) % projectedVertices.size()],
+    //              projectedVertices);
+    // }
+    // // Mapping 2D position to a 1D array, making it projects properly in 2D
+    // int output { projVertex.x + m_width * projVertex.y };
 }
 
-void Renderer::clear()
+template<int width, int height>
+void Renderer<width, height>::clear()
 {
     std::cout << "\x1b[2J\x1b[1;1H";
-    std::fill(m_fb.begin(), m_fb.end(), ' ');
-    std::fill(m_zb.begin(), m_zb.end(), 0);
+    std::ranges::fill(m_fb, ' ');
+    std::ranges::fill(m_zb, 0);
 }
 
-void Renderer::render(const std::vector<Vector::Vector3D<float>>& vertices,
+template<int width, int height>
+void Renderer<width, height>::render(const std::vector<sgm::Vec3D>& vertices,
                       const std::vector<std::vector<int>>& fs)
 {
     // populating vertices (wireframe)
-    std::vector<Vector::Vector3D<float>> newVertices { vertices };
+    std::vector<sgm::Vec3D> newVertices { vertices };
     for (const auto& face : fs) {
         for (std::size_t point {}; point < face.size(); ++point) {
             drawLine(newVertices[face[point]],
-                     newVertices[face[(point + 1) % face.size()]], newVertices);
+                     newVertices[face[(point + 1) % face.size()]],
+                     newVertices);
         }
     }
 

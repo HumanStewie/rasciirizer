@@ -3,7 +3,7 @@
 
 int main()
 {
-    Renderer renderer { 4, 80, 20 };
+    Renderer<80, 20> renderer { 4, 30};
     renderer.render(vs, fs);
 
     return 0;
