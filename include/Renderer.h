@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include <array>
 #include <vector>
 
 #include "Vector.h"
@@ -12,8 +13,8 @@ class Renderer {
     int m_height {};
     int m_fps {};
     std::size_t m_length {};
-    std::array<float, width*height>  m_fb;
-    std::array<float, width*height> m_zb {};
+    std::array<char, width*height> m_fb {};
+    std::array<int, width*height> m_zb {};
     float PI { 3.1415926f };
 
    public:
@@ -22,9 +23,7 @@ class Renderer {
           m_width { width },
           m_height { height },
           m_fps { fps },
-          m_length { static_cast<std::size_t>(m_width * m_height) },
-          m_fb(m_length),
-          m_zb(m_length)
+          m_length { static_cast<std::size_t>(m_width * m_height) }
     {
     }
 
@@ -41,7 +40,6 @@ class Renderer {
     void drawLine(const sgm::Vec3D& point1,
                   const sgm::Vec3D& point2,
                   std::vector<sgm::Vec3D>& vertices)const;
-    void drawLine(const sgm::Vec<int, 2>& point1,
-                            const sgm::Vec<int, 2>& point2,
-                            std::vector<sgm::Vec<int, 2>>& vertices);
-    };
+    void line(const sgm::Vec<int, 2>& pointA, const sgm::Vec<int, 2>& pointB, std::vector<sgm::Vec<int, 2>>& wireframe);
+};
+#include "Renderer.inl"

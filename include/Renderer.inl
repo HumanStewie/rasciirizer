@@ -1,4 +1,8 @@
-#include "../include/Renderer.h"
+//
+// Created by stew on 29/5/26.
+//
+#pragma once
+#include "Renderer.h"
 
 #include <chrono>
 #include <cmath>
@@ -7,9 +11,9 @@
 #include <thread>
 #include <vector>
 
-#include "../include/Math.h"
-#include "../include/Matrix.h"
-#include "../include/Vector.h"
+#include "Math.h"
+#include "Matrix.h"
+#include "Vector.h"
 
 /** TODO:
  * - Still have optimization available, ill get to that after my work
@@ -30,7 +34,7 @@ void Renderer<width, height>::drawLine(const sgm::Vec3D& point1, const sgm::Vec3
                         std::vector<sgm::Vec3D>& vertices) const
 {
     // 3D DDA Algorithm
-    sgm::Vec3D vec { point2.x - point1.x, point2.y - point1.y,
+    const sgm::Vec3D vec { point2.x - point1.x, point2.y - point1.y,
                      point2.z - point1.z };
 
     for (float step {}; step < sgm::length(sgm::normalize(vec));
