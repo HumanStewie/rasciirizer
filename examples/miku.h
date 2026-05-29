@@ -4,7 +4,7 @@
 #include "../include/Vector.h"
 
 // Data ripped directly from Tigerar1 https://sketchfab.com/3d-models/hatsune-miku-34f3e7daa4c64c8a8000ae7f90b01ceb#download
-inline std::vector<Vector::Vector3D<float>> vs {
+inline std::vector<sgm::Vec3D> vs {
     {0.583320f, 7.982187f, -1.768100f},
     {0.518020f, 7.969658f, -1.788130f},
     {0.523220f, 8.009398f, -1.821370f},

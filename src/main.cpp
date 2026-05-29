@@ -1,9 +1,9 @@
-#include "../examples/cube.h"
+#include "../examples/penger.h"
 #include "../include/Renderer.h"
 
 int main()
 {
-    Renderer<200, 55> renderer { 4, 30};
+    Renderer<400, 165> renderer { 2, 30};
     renderer.render(vs, fs);
 
     return 0;

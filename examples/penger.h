@@ -5,7 +5,7 @@
 
 // Data taken from Tsoding "Formula" repo: https://github.com/tsoding/formula
 // Model taken from https://github.com/Max-Kawula/penger-obj
-inline std::vector<Vector::Vector3D<float>> vs {
+inline std::vector<sgm::Vec3D> vs {
     {.x= -0.086914, .y= 0.277547, .z= 0.400041},
     {.x= -0.069555, .y= 0.329698, .z= 0.376422},
     {.x= -0.125429, .y= 0.305056, .z= 0.175577},

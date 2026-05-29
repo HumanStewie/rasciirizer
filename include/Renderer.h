@@ -16,6 +16,14 @@ class Renderer {
     std::array<char, width*height> m_fb {};
     std::array<int, width*height> m_zb {};
     float PI { 3.1415926f };
+    [[nodiscard]] sgm::Vec<int, 2> project(const sgm::Vec3D& vertex, const float ooz) const
+    {
+        // Move to center, then basic projection
+        const int projX {static_cast<int>((static_cast<float>((m_width)) / 2) + m_width * ooz * vertex.x)};
+        const int projY {static_cast<int>((static_cast<float>((m_height)) / 2) - m_height * ooz * vertex.y)};
+
+        return { projX, projY };
+    }
 
    public:
     Renderer(const float depth, const int fps = 30)
@@ -33,7 +41,7 @@ class Renderer {
     void draw()const;
     void framebuffer(float A, float B, float C,
                      const std::vector<sgm::Vec3D>& vertices,
-                     int vertSize);
+                     int vertSize, const std::vector<std::vector<int>>& faces);
     void clear();
     void render(const std::vector<sgm::Vec3D>& vertices,
                 const std::vector<std::vector<int>>& fs);
