@@ -67,16 +67,16 @@ void Renderer<width, height>::line(const sgm::Vec<int, 2>& pointA, const sgm::Ve
     float y {static_cast<float>(pointA.y)};
     int i {};
     while (i <= step) {
-        x += dx;
-        y += dy;
-        ++i;
-        // draw line
         std::size_t output {static_cast<std::size_t>(std::round(x) + m_width * std::round(y))};
         if (output > 0 && output < m_length && x > 0 &&
             x < m_width && y > 0 &&
             y < m_height) {
             m_fb[output] = '*';
         }
+        x += dx;
+        y += dy;
+        ++i;
+        // draw line
     }
 }
 
