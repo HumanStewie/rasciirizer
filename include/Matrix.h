@@ -10,7 +10,7 @@
  *
  */
 namespace sgm {
-    template <typename T, int row, int col>
+    template <typename T, std::size_t row, std::size_t col>
     class Matrix {
        private:
         unsigned int m_rowSize {};
@@ -37,7 +37,7 @@ namespace sgm {
             std::ranges::copy(elements.begin(), elements.end(), m_mat.begin());
         }
 
-        T operator [](int rowI, int colI) const;
+        T operator [](std::size_t rowI, std::size_t colI) const;
 
         // Vector::Vector4D<float> mulMatrixVector4D(
         //     const Vector::Vector4D<float>& vec)

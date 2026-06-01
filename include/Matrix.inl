@@ -2,8 +2,8 @@
 #include "Matrix.h"
 
 namespace sgm {
-    template <typename T, int row, int col>
-    T Matrix<T, row, col>::operator [](const int rowI, const int colI) const
+    template <typename T, std::size_t row, std::size_t col>
+    T Matrix<T, row, col>::operator [](const std::size_t rowI, const std::size_t colI) const
     {
         return m_mat.at(rowI + m_colSize * colI);  // Column major
     }

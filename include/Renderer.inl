@@ -11,14 +11,14 @@
 #include <thread>
 #include <vector>
 
-#include "Math.h"
+#include "sgm.h"
 #include "Matrix.h"
 #include "Vector.h"
 
 /** TODO:
  * - Still have optimization available, ill get to that after my work
  */
-template<int width, int height>
+template<std::size_t width, std::size_t height>
 void Renderer<width, height>::draw() const
 {
     for (std::size_t i {}; i <= m_length; ++i) {
@@ -29,29 +29,8 @@ void Renderer<width, height>::draw() const
     }
 }
 
-template<int width, int height>
-void Renderer<width, height>::drawLine(const sgm::Vec3D& point1, const sgm::Vec3D& point2,
-                        std::vector<sgm::Vec3D>& vertices) const
-{
-    // 3D DDA Algorithm
-    const sgm::Vec3D vec { point2.x - point1.x, point2.y - point1.y,
-                     point2.z - point1.z };
-
-    std::vector<sgm::Vec3D> line {};
-    for (float step {}; step < sgm::length(sgm::normalize(vec));
-         step += 0.05f) {
-
-        line.emplace_back(point1.x + vec.x * step,
-                             point1.y + vec.y * step,
-                             point1.z + vec.z * step);
-    }
-    for (const auto& vert : line) {
-        vertices.push_back(vert);
-    }
-}
-
-template<int width, int height>
-void Renderer<width, height>::line(const sgm::Vec<int, 2>& pointA, const sgm::Vec<int, 2>& pointB, std::vector<sgm::Vec<int, 2>>& wireframe)
+template<std::size_t width, std::size_t height>
+void Renderer<width, height>::line(const sgm::Vec<int, 2>& pointA, const sgm::Vec<int, 2>& pointB)
 {
     // DDA Algorithm
     float dx {static_cast<float>(pointB.x - pointA.x)};
@@ -67,10 +46,10 @@ void Renderer<width, height>::line(const sgm::Vec<int, 2>& pointA, const sgm::Ve
     float y {static_cast<float>(pointA.y)};
     int i {};
     while (i <= step) {
-        std::size_t output {static_cast<std::size_t>(std::round(x) + m_width * std::round(y))};
+        std::size_t output {static_cast<std::size_t>(std::round(x) + static_cast<float>(m_width) * std::round(y))};
         if (output > 0 && output < m_length && x > 0 &&
-            x < m_width && y > 0 &&
-            y < m_height) {
+            x < static_cast<float>(m_width) && y > 0 &&
+            y < static_cast<float>(m_height)) {
             m_fb[output] = '*';
         }
         x += dx;
@@ -80,10 +59,10 @@ void Renderer<width, height>::line(const sgm::Vec<int, 2>& pointA, const sgm::Ve
     }
 }
 
-template<int width, int height>
+template<std::size_t width, std::size_t height>
 void Renderer<width, height>::framebuffer(const float A, const float B, const float C,
                            const std::vector<sgm::Vec3D>& vertices,
-                           const int vertSize, const std::vector<std::vector<int>>& faces)
+                           const std::vector<std::vector<int>>& faces)
 {
     // precompute sin cos of 3 dimensions
     const float cosA { (std::cos(A)) };
@@ -116,28 +95,27 @@ void Renderer<width, height>::framebuffer(const float A, const float B, const fl
         projectedVertices.push_back(projVertex);
 
         // Mapping 2D position to a 1D array, making it projects properly in 2D
-        const int output { projVertex.x + m_width * projVertex.y };
+        const std::size_t output { static_cast<std::size_t>(projVertex.x + m_width * projVertex.y) };
 
         // populating buffer
         if (output > 0 && output < m_length && projVertex.x > 0 &&
             projVertex.x < m_width && projVertex.y > 0 &&
             projVertex.y < m_height) {
-            if (ooz > m_zb[static_cast<std::size_t>(output)]) {
-                m_zb[static_cast<std::size_t>(output)] = ooz;
-                m_fb[static_cast<std::size_t>(output)] = '#';
+            if (ooz > m_zb[output]) {
+                m_zb[output] = ooz;
+                m_fb[output] = '#';
             }
         }
     }
     for (const auto& face : faces) {
         for (std::size_t point {}; point < face.size(); ++point) {
-            line(projectedVertices[face[point]],
-                     projectedVertices[face[(point + 1) % face.size()]],
-                     projectedVertices);
+            line(projectedVertices[static_cast<std::size_t>(face[point])],
+                     projectedVertices[static_cast<std::size_t>(face[(point + 1) % face.size()])]);
         }
     }
 }
 
-template<int width, int height>
+template<std::size_t width, std::size_t height>
 void Renderer<width, height>::clear()
 {
     std::cout << "\x1b[2J\x1b[1;1H";
@@ -145,17 +123,16 @@ void Renderer<width, height>::clear()
     std::ranges::fill(m_zb, 0);
 }
 
-template<int width, int height>
+template<std::size_t width, std::size_t height>
 void Renderer<width, height>::render(const std::vector<sgm::Vec3D>& vertices,
                                      const std::vector<std::vector<int>>& fs)
 {
-
     float A {};
     float B {};
     float C {};
     while (true) {
         clear();
-        framebuffer(A, B, C, vertices, std::ssize(vertices), fs);
+        framebuffer(A, B, C, vertices, fs);
         draw();
         A += 0.07f;
         B += 0.03f;
