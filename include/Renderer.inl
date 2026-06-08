@@ -2,8 +2,6 @@
 // Created by stew on 29/5/26.
 //
 #pragma once
-#include "Renderer.h"
-
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -11,14 +9,15 @@
 #include <thread>
 #include <vector>
 
-#include "sgm.h"
 #include "Matrix.h"
+#include "Renderer.h"
 #include "Vector.h"
+#include "sgm.h"
 
 /** TODO:
  * - Still have optimization available, ill get to that after my work
  */
-template<std::size_t width, std::size_t height>
+template <std::size_t width, std::size_t height>
 void Renderer<width, height>::draw() const
 {
     for (std::size_t i {}; i <= m_length; ++i) {
@@ -29,12 +28,13 @@ void Renderer<width, height>::draw() const
     }
 }
 
-template<std::size_t width, std::size_t height>
-void Renderer<width, height>::line(const sgm::Vec<int, 2>& pointA, const sgm::Vec<int, 2>& pointB)
+template <std::size_t width, std::size_t height>
+void Renderer<width, height>::line(const sgm::Vec<int, 2>& pointA,
+                                   const sgm::Vec<int, 2>& pointB)
 {
     // DDA Algorithm
-    float dx {static_cast<float>(pointB.x - pointA.x)};
-    float dy {static_cast<float>(pointB.y - pointA.y)};
+    float dx { static_cast<float>(pointB.x - pointA.x) };
+    float dy { static_cast<float>(pointB.y - pointA.y) };
     int step {};
     if (std::abs(dx) >= std::abs(dy))
         step = static_cast<int>(std::abs(dx));
@@ -42,11 +42,12 @@ void Renderer<width, height>::line(const sgm::Vec<int, 2>& pointA, const sgm::Ve
         step = static_cast<int>(std::abs(dy));
     dx /= static_cast<float>(step);
     dy /= static_cast<float>(step);
-    float x {static_cast<float>(pointA.x)};
-    float y {static_cast<float>(pointA.y)};
+    float x { static_cast<float>(pointA.x) };
+    float y { static_cast<float>(pointA.y) };
     int i {};
     while (i <= step) {
-        std::size_t output {static_cast<std::size_t>(std::round(x) + static_cast<float>(m_width) * std::round(y))};
+        std::size_t output { static_cast<std::size_t>(
+            std::round(x) + static_cast<float>(m_width) * std::round(y)) };
         if (output > 0 && output < m_length && x > 0 &&
             x < static_cast<float>(m_width) && y > 0 &&
             y < static_cast<float>(m_height)) {
@@ -59,10 +60,40 @@ void Renderer<width, height>::line(const sgm::Vec<int, 2>& pointA, const sgm::Ve
     }
 }
 
-template<std::size_t width, std::size_t height>
-void Renderer<width, height>::framebuffer(const float A, const float B, const float C,
-                           const std::vector<sgm::Vec3D>& vertices,
-                           const std::vector<std::vector<int>>& faces)
+template <std::size_t width, std::size_t height>
+void Renderer<width, height>::rasterizeTriangle(const sgm::Vec<int, 2>& pointA,
+                                                const sgm::Vec<int, 2>& pointB,
+                                                const sgm::Vec<int, 2>& pointC)
+{
+    // Get bounding box
+    // TODO: Optimization where we just need to calculate within the triangle
+    int minX { std::min({ pointA.x, pointB.x, pointC.x }) };
+    int minY { std::min({ pointA.y, pointB.y, pointC.y }) };
+    int maxX { std::max({ pointA.x, pointB.x, pointC.x }) };
+    int maxY { std::max({ pointA.y, pointB.y, pointC.y }) };
+    for (int row { minY }; row < maxY; ++row) {
+        for (int col { minX }; col < maxX; ++col) {
+            // Check if it's in the triangle or not
+            int w0 { Renderer::orient2D(pointB, pointC, { col, row }) };
+            int w1 { Renderer::orient2D(pointC, pointA, { col, row }) };
+            int w2 { Renderer::orient2D(pointA, pointB, { col, row }) };
+            if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+                std::size_t output { static_cast<std::size_t>(col +
+                                                              row * m_width) };
+                if (output > 0 && output < m_length && col > 0 &&
+                    col < m_width && row > 0 && row < m_height) {
+                    m_fb[output] = '*';
+                }
+            }
+        }
+    }
+}
+
+template <std::size_t width, std::size_t height>
+void Renderer<width, height>::framebuffer(
+    const float A, const float B, const float C,
+    const std::vector<sgm::Vec3D>& vertices,
+    const std::vector<std::vector<int>>& faces)
 {
     // precompute sin cos of 3 dimensions
     const float cosA { (std::cos(A)) };
@@ -75,17 +106,17 @@ void Renderer<width, height>::framebuffer(const float A, const float B, const fl
     const float sinAsinB { sinA * sinB };
 
     const sgm::Mat3D rotationMatrix { cosA * cosB,
-                                sinA * cosB,
-                                -sinB,
-                                cosAsinB * sinC - sinA * cosC,
-                                sinAsinB * sinC + cosA * cosC,
-                                cosB * sinC,
-                                cosAsinB * cosC + sinA * sinC,
-                                sinAsinB * cosC - cosA * sinC,
-                                cosB * cosC };
+                                      sinA * cosB,
+                                      -sinB,
+                                      cosAsinB * sinC - sinA * cosC,
+                                      sinAsinB * sinC + cosA * cosC,
+                                      cosB * sinC,
+                                      cosAsinB * cosC + sinA * sinC,
+                                      sinAsinB * cosC - cosA * sinC,
+                                      cosB * cosC };
 
     std::vector<sgm::Vec<int, 2>> projectedVertices {};
-    for (std::size_t i{}; i < vertices.size(); ++i) {
+    for (std::size_t i {}; i < vertices.size(); ++i) {
         sgm::Vec3D rotateVertex { vertices[i] * rotationMatrix };
         rotateVertex.z += m_depth;
 
@@ -95,7 +126,8 @@ void Renderer<width, height>::framebuffer(const float A, const float B, const fl
         projectedVertices.push_back(projVertex);
 
         // Mapping 2D position to a 1D array, making it projects properly in 2D
-        const std::size_t output { static_cast<std::size_t>(projVertex.x + m_width * projVertex.y) };
+        const std::size_t output { static_cast<std::size_t>(
+            projVertex.x + m_width * projVertex.y) };
 
         // populating buffer
         if (output > 0 && output < m_length && projVertex.x > 0 &&
@@ -108,14 +140,18 @@ void Renderer<width, height>::framebuffer(const float A, const float B, const fl
         }
     }
     for (const auto& face : faces) {
-        for (std::size_t point {}; point < face.size(); ++point) {
-            line(projectedVertices[static_cast<std::size_t>(face[point])],
-                     projectedVertices[static_cast<std::size_t>(face[(point + 1) % face.size()])]);
-        }
+        // for (std::size_t point {}; point < face.size(); ++point) {
+        //     line(projectedVertices[static_cast<std::size_t>(face[point])],
+        //          projectedVertices[static_cast<std::size_t>(
+        //              face[(point + 1) % face.size()])]);
+        // }
+        rasterizeTriangle(projectedVertices[static_cast<std::size_t>(face[0])],
+                          projectedVertices[static_cast<std::size_t>(face[1])],
+                          projectedVertices[static_cast<std::size_t>(face[2])]);
     }
 }
 
-template<std::size_t width, std::size_t height>
+template <std::size_t width, std::size_t height>
 void Renderer<width, height>::clear()
 {
     std::cout << "\x1b[2J\x1b[1;1H";
@@ -123,7 +159,7 @@ void Renderer<width, height>::clear()
     std::ranges::fill(m_zb, 0);
 }
 
-template<std::size_t width, std::size_t height>
+template <std::size_t width, std::size_t height>
 void Renderer<width, height>::render(const std::vector<sgm::Vec3D>& vertices,
                                      const std::vector<std::vector<int>>& fs)
 {
