@@ -20,7 +20,7 @@ cmake --build build --config Release
 ./build/rasciirizer
 ```
 
-You can change output settings by changing the first parameter of `render()`. More work will be made on making that more customizable and modular.
+You can change output settings by changing the first parameter of `render()`, resolution can be changed in `<width, height>` template. It had to be templated so I can use `std::array` for framebuffer and zbuffer. More work will be made on making that more customizable and modular.
 
 Additional examples, with cool shapes like penger, pretzel and Miku(!)
 can be seen in `examples/` folder. All you need to do is `#include`
@@ -30,15 +30,19 @@ them and use their `vs` and `fs` for the renderer! **Fair warning:** Some models
 
 The underlying principle is similar to donut in C, in that it go through 3 simple step to render: Rotation -> Translation -> Output. Unlike donut in C, where Andy used mathematical algorithms to generate pixels for the donut, I simply loop through a list of vertices and faces data then rotate, translate and draw the correct pixel at the correct spot. This has the added benefit that you can now output *any* shape, given you have the vertices and faces data of it.
 
-For now, it is a simple wireframe renderer for the terminal, and in fact, you probably won't even see the wireframe due to how small terminals "pixels" are. It should be visible if you zoom in, though.
+~~For now, it is a simple wireframe renderer for the terminal, and in fact, you probably won't even see the wireframe due to how small terminals "pixels" are. It should be visible if you zoom in, though.~~
+
+Everything should look MUCH better now, proper DDA algorithm is used. In the latest update, though, we have triangle rasterization! No lighting and it is a bit buggy, still being worked on.
 
 To get into the math a bit, to rotate the object, we rotate every "pixels" every frame, which is surprisingly efficient (more in Optimization part):
 
 ```cpp
-Vector::Vector3D<float> rotatedVec {rotationMatrix.mulMatrixVector3D(currentVertex)};
+sgm::Vec3D rotatedVec {currentVertex * rotationMatrix};
 ```
 
-`mulMatrixVector3D()` is defined in `Matrix.h` header library (which admittedly need to be improved, and it will in the next iteration).
+~~`mulMatrixVector3D()` is defined in `Matrix.h` header library (which admittedly need to be improved, and it will in the next iteration).~~
+
+Math library now revamped to be called `sgm`, might make a dedicated repo for it, but for now it supports basic vector matrix multiplication and some defined structs.
 
 After rotating within Local Space, we translate it back away from the camera (which indirectly move it from Local Space to World Space to Camera Space):
 
@@ -49,7 +53,7 @@ rotatedVec.z += depth;
 Finally, we project this using a simple perspective equation and throw it into a framebuffer for printing (which is a vector):
 
 ```cpp
-Vector::Vector2D proj {rotatedVec.x / rotatedVec.z, rotatedVec.y / rotatedVec.z};
+sgm::Vec<int, 2> proj {rotatedVec.x / rotatedVec.z, rotatedVec.y / rotatedVec.z};
 int output { proj.x + width * proj.y };
 framebuffer[output] = '#';
 ```
@@ -68,7 +72,7 @@ Surely, there are more, but i have yet to gain the knowledge of C++ itself to us
 
 ## TODO
 
-- Draw triangles and fill in those triangles efficiently
+- ~~Draw triangles and fill in those triangles~~ efficiently (isn't efficient, probably)
 - With given triangles, find normals and simulate lighting
 - More optimizations, such as move semantics.
 - Fix scaling issue
