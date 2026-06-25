@@ -3,6 +3,7 @@ builds/
 models/
 cmake-build-*/
 build/
+.cache/
 
 .idea/
 .idea/*

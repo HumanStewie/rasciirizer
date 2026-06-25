@@ -28,6 +28,13 @@ class Renderer {
 
         return { projX, projY };
     }
+    [[nodiscard]] int orient2D(const sgm::Vec<int, 2>& pointA,
+                               const sgm::Vec<int, 2>& pointB,
+                               const sgm::Vec<int, 2>& pointC)
+    {
+        return (pointB.x - pointA.x) * (pointC.y - pointA.y) -
+               (pointC.x - pointA.x) * (pointB.y - pointA.y);
+    }
 
    public:
     Renderer(const float depth, const int fps = 30)
@@ -39,6 +46,7 @@ class Renderer {
     {
     }
 
+    char getinput() const;
     int getWindowWidth() const { return m_width; }
     int getWindowHeight() const { return m_height; }
 
@@ -50,12 +58,8 @@ class Renderer {
     void render(const std::vector<sgm::Vec3D>& vertices,
                 const std::vector<std::vector<int>>& fs);
     void line(const sgm::Vec<int, 2>& pointA, const sgm::Vec<int, 2>& pointB);
-    int orient2D(const sgm::Vec<int, 2>& pointA, const sgm::Vec<int, 2>& pointB,
-                 const sgm::Vec<int, 2>& pointC)
-    {
-        return (pointB.x - pointA.x) * (pointC.y - pointA.y) -
-               (pointC.x - pointA.x) * (pointB.y - pointA.y);
-    }
-    void rasterizeTriangle(const sgm::Vec<int, 2>& pointA, const sgm::Vec<int, 2>& pointB, const sgm::Vec<int, 2>& pointC);
+    void rasterizeTriangle(const sgm::Vec<int, 2>& pointA,
+                           const sgm::Vec<int, 2>& pointB,
+                           const sgm::Vec<int, 2>& pointC);
 };
 #include "Renderer.inl"

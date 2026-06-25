@@ -8,8 +8,9 @@ software "renderer" (more correctly rasterizer) for ASCII art given vertices and
 `#include` or write your own vertices and face data in `src/main.cpp` and run:
 
 ```bash
-cmake -B build # Debug version
-cmake -B build -DCMAKE_BUILD_TYPE=Release # Release version
+# I recommend Ninja, remove for default generator
+cmake -B build -G Ninja # Debug version
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release # Release version
 
 # Debug version
 cmake --build build (--clean-first) # Run with --clean-first if you want to clean up build files
