@@ -4,6 +4,7 @@
 #pragma once
 #include <chrono>
 #include <cmath>
+#include <complex>
 #include <cstdlib>
 #include <iostream>
 #include <thread>
@@ -51,7 +52,8 @@ void Renderer<width, height>::line(const sgm::Vec<int, 2>& pointA,
         if (output > 0 && output < m_length && x > 0 &&
             x < static_cast<float>(m_width) && y > 0 &&
             y < static_cast<float>(m_height)) {
-            m_fb[output] = '*';
+            const sgm::Vec grid {getGridCoordinate(x, y)};
+            SDL_RenderDebugText(getRawRenderer(), grid.x, grid.y, "#");
         }
         x += dx;
         y += dy;
@@ -67,22 +69,23 @@ void Renderer<width, height>::rasterizeTriangle(const sgm::Vec<int, 2>& pointA,
 {
     // Get bounding box
     // TODO: Optimization where we just need to calculate within the triangle
-    int minX { std::min({ pointA.x, pointB.x, pointC.x }) };
-    int minY { std::min({ pointA.y, pointB.y, pointC.y }) };
-    int maxX { std::max({ pointA.x, pointB.x, pointC.x }) };
-    int maxY { std::max({ pointA.y, pointB.y, pointC.y }) };
+    const int minX { std::min({ pointA.x, pointB.x, pointC.x }) };
+    const int minY { std::min({ pointA.y, pointB.y, pointC.y }) };
+    const int maxX { std::max({ pointA.x, pointB.x, pointC.x }) };
+    const int maxY { std::max({ pointA.y, pointB.y, pointC.y }) };
     for (int row { minY }; row < maxY; ++row) {
         for (int col { minX }; col < maxX; ++col) {
             // Check if it's in the triangle or not
-            int w0 { Renderer::orient2D(pointB, pointC, { col, row }) };
-            int w1 { Renderer::orient2D(pointC, pointA, { col, row }) };
-            int w2 { Renderer::orient2D(pointA, pointB, { col, row }) };
+            const int w0 { Renderer::orient2D(pointB, pointC, { col, row }) };
+            const int w1 { Renderer::orient2D(pointC, pointA, { col, row }) };
+            const int w2 { Renderer::orient2D(pointA, pointB, { col, row }) };
             if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
-                std::size_t output { static_cast<std::size_t>(col +
+                const std::size_t output { static_cast<std::size_t>(col +
                                                               row * m_width) };
                 if (output > 0 && output < m_length && col > 0 &&
                     col < m_width && row > 0 && row < m_height) {
-                    m_fb[output] = '*';
+                    const sgm::Vec grid {getGridCoordinate(col, row)};
+                    SDL_RenderDebugText(getRawRenderer(), grid.x, grid.y, "#");
                 }
             }
         }
@@ -91,10 +94,11 @@ void Renderer<width, height>::rasterizeTriangle(const sgm::Vec<int, 2>& pointA,
 
 template <std::size_t width, std::size_t height>
 void Renderer<width, height>::framebuffer(
-    const float A, const float B, const float C,
     const std::vector<sgm::Vec3D>& vertices,
     const std::vector<std::vector<int>>& faces)
 {
+    SDL_SetRenderDrawColor(getRawRenderer(), 255, 255, 255, SDL_ALPHA_OPAQUE);
+
     // precompute sin cos of 3 dimensions
     const float cosA { (std::cos(A)) };
     const float sinA { (std::sin(A)) };
@@ -128,51 +132,44 @@ void Renderer<width, height>::framebuffer(
         // Mapping 2D position to a 1D array, making it projects properly in 2D
         const std::size_t output { static_cast<std::size_t>(
             projVertex.x + m_width * projVertex.y) };
-
+        const sgm::Vec gridVertex{ getGridCoordinate(projVertex.x, projVertex.y)};
         // populating buffer
         if (output > 0 && output < m_length && projVertex.x > 0 &&
             projVertex.x < m_width && projVertex.y > 0 &&
             projVertex.y < m_height) {
             if (ooz > m_zb[output]) {
                 m_zb[output] = ooz;
-                m_fb[output] = '#';
+                SDL_RenderDebugText(getRawRenderer(), gridVertex.x, gridVertex.y, "#");
             }
         }
     }
     for (const auto& face : faces) {
-        // for (std::size_t point {}; point < face.size(); ++point) {
-        //     line(projectedVertices[static_cast<std::size_t>(face[point])],
-        //          projectedVertices[static_cast<std::size_t>(
-        //              face[(point + 1) % face.size()])]);
-        // }
-        rasterizeTriangle(projectedVertices[static_cast<std::size_t>(face[0])],
-                          projectedVertices[static_cast<std::size_t>(face[1])],
-                          projectedVertices[static_cast<std::size_t>(face[2])]);
+        for (std::size_t point {}; point < face.size(); ++point) {
+            line(projectedVertices[static_cast<std::size_t>(face[point])],
+                 projectedVertices[static_cast<std::size_t>(
+                     face[(point + 1) % face.size()])]);
+        }
+        // rasterizeTriangle(projectedVertices[static_cast<std::size_t>(face[0])],
+        //                   projectedVertices[static_cast<std::size_t>(face[1])],
+        //                   projectedVertices[static_cast<std::size_t>(face[2])]);
     }
 }
 
 template <std::size_t width, std::size_t height>
-void Renderer<width, height>::clear()
+void Renderer<width, height>::clear() const
 {
-    std::cout << "\x1b[2J\x1b[1;1H";
-    std::ranges::fill(m_fb, ' ');
-    std::ranges::fill(m_zb, 0);
+    SDL_SetRenderDrawColor(getRawRenderer(), 0, 0, 0, SDL_ALPHA_OPAQUE);
+    SDL_RenderClear(getRawRenderer());
 }
 
 template <std::size_t width, std::size_t height>
 void Renderer<width, height>::render(const std::vector<sgm::Vec3D>& vertices,
                                      const std::vector<std::vector<int>>& fs)
 {
-    float A {};
-    float B {};
-    float C {};
-    while (true) {
-        clear();
-        framebuffer(A, B, C, vertices, fs);
-        draw();
-        A += 0.07f;
-        B += 0.03f;
-        C += 0.05f;
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000 / m_fps));
-    }
+    A += 0.07f;
+    B += 0.03f;
+    C += 0.05f;
+    clear();
+    framebuffer(vertices, fs);
+    SDL_RenderPresent(getRawRenderer());
 }

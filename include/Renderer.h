@@ -3,10 +3,42 @@
 #include <vector>
 
 #include "Vector.h"
+#include <SDL3/SDL_render.h>
+#include <memory>
 
 template <std::size_t width, std::size_t height>
 class Renderer {
-   private:
+   public:
+    Renderer(const float depth, const int fps, SDL_Window* window)
+        : sdl_renderer_{SDL_CreateRenderer(window, "software"), &SDL_DestroyRenderer},
+          m_depth { depth },
+          m_width { width },
+          m_height { height },
+          m_fps { fps },
+          m_length { static_cast<std::size_t>(m_width * m_height) }
+    {
+        SDL_SetRenderVSync(sdl_renderer_.get(), 1);
+    }
+    Renderer(const Renderer& other) = delete;
+    Renderer* operator=(const Renderer& other) = delete;
+
+    [[nodiscard]] int getWindowWidth() const { return m_width; }
+    [[nodiscard]] int getWindowHeight() const { return m_height; }
+    [[nodiscard]] SDL_Renderer* getRawRenderer() const { return sdl_renderer_.get(); }
+
+
+    void draw() const;
+    void framebuffer(const std::vector<sgm::Vec3D>& vertices,
+                     const std::vector<std::vector<int>>& faces);
+    void clear() const;
+    void render(const std::vector<sgm::Vec3D>& vertices,
+                const std::vector<std::vector<int>>& fs);
+    void line(const sgm::Vec<int, 2>& pointA, const sgm::Vec<int, 2>& pointB);
+    void rasterizeTriangle(const sgm::Vec<int, 2>& pointA,
+                           const sgm::Vec<int, 2>& pointB,
+                           const sgm::Vec<int, 2>& pointC);
+private:
+    std::unique_ptr<SDL_Renderer, decltype(&SDL_DestroyRenderer)> sdl_renderer_;
     float m_depth {};
     int m_width {};
     int m_height {};
@@ -15,6 +47,9 @@ class Renderer {
     std::array<char, width * height> m_fb {};
     std::array<float, width * height> m_zb {};
     float PI { 3.1415926f };
+    float A {};
+    float B {};
+    float C {};
     [[nodiscard]] sgm::Vec<int, 2> project(const sgm::Vec3D& vertex,
                                            const float ooz) const
     {
@@ -35,31 +70,9 @@ class Renderer {
         return (pointB.x - pointA.x) * (pointC.y - pointA.y) -
                (pointC.x - pointA.x) * (pointB.y - pointA.y);
     }
-
-   public:
-    Renderer(const float depth, const int fps = 30)
-        : m_depth { depth },
-          m_width { width },
-          m_height { height },
-          m_fps { fps },
-          m_length { static_cast<std::size_t>(m_width * m_height) }
+    [[nodiscard]] sgm::Vec<int, 2> getGridCoordinate(int x, int y)
     {
+        return sgm::Vec<int, 2> {x * 8 + 4, y * 16 + 8};
     }
-
-    char getinput() const;
-    int getWindowWidth() const { return m_width; }
-    int getWindowHeight() const { return m_height; }
-
-    void draw() const;
-    void framebuffer(float A, float B, float C,
-                     const std::vector<sgm::Vec3D>& vertices,
-                     const std::vector<std::vector<int>>& faces);
-    void clear();
-    void render(const std::vector<sgm::Vec3D>& vertices,
-                const std::vector<std::vector<int>>& fs);
-    void line(const sgm::Vec<int, 2>& pointA, const sgm::Vec<int, 2>& pointB);
-    void rasterizeTriangle(const sgm::Vec<int, 2>& pointA,
-                           const sgm::Vec<int, 2>& pointB,
-                           const sgm::Vec<int, 2>& pointC);
 };
 #include "Renderer.inl"
