@@ -74,9 +74,9 @@ Surely, there are more, but i have yet to gain the knowledge of C++ itself to us
 ## TODO
 
 - ~~Draw triangles and fill in those triangles~~ efficiently (isn't efficient, probably)
-- With given triangles, find normals and simulate lighting
+- ~~With given triangles, find normals and simulate lighting~~
 - More optimizations, such as move semantics.
-- Fix scaling issue
+- ~~Fix scaling issue~~
 - Make renderer more modular
-- Projection scaling issues
+- ~~Projection scaling issues~~
 

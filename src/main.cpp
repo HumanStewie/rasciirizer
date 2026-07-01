@@ -4,8 +4,10 @@
 #include "Window.h"
 #include "pretzel.h"
 
-constexpr int WINDOW_HEIGHT = 720;
-constexpr int WINDOW_WIDTH = 1280;
+constexpr int WINDOW_HEIGHT {720};
+constexpr int WINDOW_WIDTH {1280};
+constexpr int CHAR_HEIGHT {16};
+constexpr int CHAR_WIDTH {8};
 constexpr int FRAME_DURATION {33}; // in ms
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
@@ -19,8 +21,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     bool running {true};
     SDL_Event event;
 
-    Renderer<300, 100> renderer {  2, 30, gameWindow.getRawWindow() };
-    SDL_SetRenderScale(renderer.getRawRenderer(), 0.5f, 0.5f);
+    Renderer<WINDOW_WIDTH/CHAR_WIDTH, WINDOW_HEIGHT/CHAR_HEIGHT> renderer { 15, gameWindow.getRawWindow(), WINDOW_WIDTH, WINDOW_HEIGHT };
     while (running)
     {
         const Uint32 tick {static_cast<Uint32>(SDL_GetTicks())};

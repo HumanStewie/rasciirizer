@@ -53,6 +53,15 @@ namespace sgm {
             mat[0, 2] * vec.x + mat[1, 2] * vec.y + mat[2, 2] * vec.z
         };
     }
+    // cross product
+    inline Vec3D cross(const Vec3D& vec1, const Vec3D& vec2) {
+        return Vec3D {
+            vec1.y * vec2.z - vec1.z * vec2.y, vec1.z * vec2.x - vec1.x * vec2.z, vec1.x * vec2.y - vec1.y * vec2.x
+        };
+    }
+    inline float dot(const Vec3D& vec1, const Vec3D& vec2) {
+        return vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z;
+    }
     inline float length(const Vec3D& vec)
     {
         return std::sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
