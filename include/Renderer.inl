@@ -2,6 +2,7 @@
 // Created by stew on 29/5/26.
 //
 #pragma once
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
@@ -50,7 +51,7 @@ void Renderer<width, height>::line(const sgm::Vec<int, 2>& pointA,
         if (output > 0 && output < m_length && x > 0 &&
             x < static_cast<float>(m_width) && y > 0 &&
             y < static_cast<float>(m_height)) {
-            const sgm::Vec grid {getGridCoordinate(x, y)};
+            const sgm::Vec grid { getGridCoordinate(x, y) };
             SDL_RenderDebugText(getRawRenderer(), grid.x, grid.y, "#");
         }
         x += dx;
@@ -63,7 +64,8 @@ void Renderer<width, height>::line(const sgm::Vec<int, 2>& pointA,
 template <std::size_t width, std::size_t height>
 void Renderer<width, height>::rasterizeTriangle(const sgm::Vec<int, 2>& pointA,
                                                 const sgm::Vec<int, 2>& pointB,
-                                                const sgm::Vec<int, 2>& pointC, float luminance)
+                                                const sgm::Vec<int, 2>& pointC,
+                                                float luminance)
 {
     // Get bounding box
     // TODO: Optimization where we just need to calculate within the triangle
@@ -79,12 +81,17 @@ void Renderer<width, height>::rasterizeTriangle(const sgm::Vec<int, 2>& pointA,
             const int w1 { Renderer::orient2D(pointC, pointA, { col, row }) };
             const int w2 { Renderer::orient2D(pointA, pointB, { col, row }) };
             if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
-                const std::size_t output { static_cast<std::size_t>(col +
-                                                              row * m_width) };
+                const std::size_t output { static_cast<std::size_t>(
+                    col + row * m_width) };
                 if (output > 0 && output < m_length && col > 0 &&
                     col < m_width && row > 0 && row < m_height) {
-                    const sgm::Vec grid {getGridCoordinate(col, row)};
-                    SDL_RenderDebugTextFormat(getRawRenderer(), static_cast<float>(grid.x), static_cast<float>(grid.y), "%c", ".,-~:;=!*#$@"[luminance > 0 ? static_cast<std::size_t>(luminance) : 0]);
+                    const sgm::Vec grid { getGridCoordinate(col, row) };
+                    SDL_RenderDebugTextFormat(
+                        getRawRenderer(), static_cast<float>(grid.x),
+                        static_cast<float>(grid.y), "%c",
+                        ".,-~:;=!*#$@"[luminance > 0
+                                           ? static_cast<std::size_t>(luminance)
+                                           : 0]);
                 }
             }
         }
@@ -118,6 +125,8 @@ void Renderer<width, height>::framebuffer(
                                       sinAsinB * cosC - cosA * sinC,
                                       cosB * cosC };
 
+    // std::array<sgm::Vec<int, 2>> projectedVertices{};
+    // std::array<sgm::Vec3D> rotatedVertices{};
     std::vector<sgm::Vec<int, 2>> projectedVertices {};
     std::vector<sgm::Vec3D> rotatedVertices {};
     for (std::size_t i {}; i < vertices.size(); ++i) {
@@ -138,29 +147,49 @@ void Renderer<width, height>::framebuffer(
             projVertex.y < m_height) {
             if (ooz > m_zb[output]) {
                 m_zb[output] = ooz;
-                const sgm::Vec gridVertex{ getGridCoordinate(projVertex.x, projVertex.y)};
-                SDL_RenderDebugText(this->getRawRenderer(), static_cast<float>(gridVertex.x), static_cast<float>(gridVertex.y), ".");
             }
         }
     }
+    int count {};
     for (const auto& face : faces) {
         // for (std::size_t point {}; point < face.size(); ++point) {
         //     line(projectedVertices[static_cast<std::size_t>(face[point])],
         //          projectedVertices[static_cast<std::size_t>(
         //              face[(point + 1) % face.size()])]);
         // }
-        sgm::Vec3D vec1 { rotatedVertices[static_cast<std::size_t>(face[1])].x - rotatedVertices[static_cast<std::size_t>(face[0])].x,
-                        rotatedVertices[static_cast<std::size_t>(face[1])].y - rotatedVertices[static_cast<std::size_t>(face[0])].y,
-                        rotatedVertices[static_cast<std::size_t>(face[1])].z - rotatedVertices[static_cast<std::size_t>(face[0])].z };
-        sgm::Vec3D vec2 { rotatedVertices[static_cast<std::size_t>(face[2])].x - rotatedVertices[static_cast<std::size_t>(face[0])].x,
-                        rotatedVertices[static_cast<std::size_t>(face[2])].y - rotatedVertices[static_cast<std::size_t>(face[0])].y,
-                        rotatedVertices[static_cast<std::size_t>(face[2])].z - rotatedVertices[static_cast<std::size_t>(face[0])].z };
-        sgm::Vec3D normalVector { sgm::normalize(sgm::cross(vec1, vec2)) };
-        float luminance { 8 * sgm::dot(normalVector, sgm::normalize(lightPos)) };
-        rasterizeTriangle(projectedVertices[static_cast<std::size_t>(face[0])],
-                          projectedVertices[static_cast<std::size_t>(face[1])],
-                          projectedVertices[static_cast<std::size_t>(face[2])], luminance);
+        sgm::Vec3D vec1 {
+            rotatedVertices[static_cast<std::size_t>(face[1])].x -
+                rotatedVertices[static_cast<std::size_t>(face[0])].x,
+            rotatedVertices[static_cast<std::size_t>(face[1])].y -
+                rotatedVertices[static_cast<std::size_t>(face[0])].y,
+            rotatedVertices[static_cast<std::size_t>(face[1])].z -
+                rotatedVertices[static_cast<std::size_t>(face[0])].z
+        };
+        sgm::Vec3D vec2 {
+            rotatedVertices[static_cast<std::size_t>(face[2])].x -
+                rotatedVertices[static_cast<std::size_t>(face[0])].x,
+            rotatedVertices[static_cast<std::size_t>(face[2])].y -
+                rotatedVertices[static_cast<std::size_t>(face[0])].y,
+            rotatedVertices[static_cast<std::size_t>(face[2])].z -
+                rotatedVertices[static_cast<std::size_t>(face[0])].z
+        };
+        sgm::Vec3D normalVector { sgm::cross(vec1, vec2) };
+        float luminance { 8 * sgm::dot(sgm::normalize(normalVector),
+                                       sgm::normalize(lightPos)) };
+        // if normal vector of the plane points torward the camera, then it is
+        // facing us, then we render it!
+        if (normalVector.z < 0) {
+            count++;
+            std::cout << normalVector.z << '\n';
+            rasterizeTriangle(
+                projectedVertices[static_cast<std::size_t>(face[0])],
+                projectedVertices[static_cast<std::size_t>(face[1])],
+                projectedVertices[static_cast<std::size_t>(face[2])],
+                luminance);
+        }
     }
+    SDL_RenderDebugTextFormat(this->getRawRenderer(), 10, 700,
+                              "Faces count: %d/%d", count, faces.size());
 }
 
 template <std::size_t width, std::size_t height>
