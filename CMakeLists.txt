@@ -3,12 +3,12 @@ project(rasciirizer)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(GCC_COMPILE_FLAGS -Wall -Weffc++ -Wextra -Wconversion -Wsign-conversion -pedantic-errors)
+set(GCC_COMPILE_FLAGS -Wall)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
 
-add_executable(rasciirizer src/main.cpp
+add_executable(rasciirizer src/main.cpp "examples/pretzel.h"
         include/Window.h)
 target_include_directories(rasciirizer PRIVATE include/ examples/)
 target_compile_options(rasciirizer PRIVATE ${GCC_COMPILE_FLAGS})

@@ -10,7 +10,7 @@ constexpr int WINDOW_WIDTH { 1280 };
 constexpr int CHAR_HEIGHT { 16 };
 constexpr int CHAR_WIDTH { 8 };
 constexpr int FRAME_DURATION { 33 };  // in ms
-constexpr float DEPTH { 1.3f };
+constexpr float DEPTH { 1.8f };
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {

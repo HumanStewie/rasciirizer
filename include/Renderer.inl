@@ -74,17 +74,20 @@ void Renderer<width, height>::rasterizeTriangle(const sgm::Vec<int, 2>& pointA,
     const int maxX { std::max({ pointA.x, pointB.x, pointC.x }) };
     const int maxY { std::max({ pointA.y, pointB.y, pointC.y }) };
 
+    
+
     for (int row { minY }; row < maxY; ++row) {
         for (int col { minX }; col < maxX; ++col) {
             // Check if it's in the triangle or not
             const int w0 { Renderer::orient2D(pointB, pointC, { col, row }) };
             const int w1 { Renderer::orient2D(pointC, pointA, { col, row }) };
             const int w2 { Renderer::orient2D(pointA, pointB, { col, row }) };
-            if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+            if (w0 >= 0 && w1 >= 0 && w2 >= 0) {    
                 const std::size_t output { static_cast<std::size_t>(
                     col + row * m_width) };
                 if (output > 0 && output < m_length && col > 0 &&
                     col < m_width && row > 0 && row < m_height) {
+
                     const sgm::Vec grid { getGridCoordinate(col, row) };
                     SDL_RenderDebugTextFormat(
                         getRawRenderer(), static_cast<float>(grid.x),
@@ -125,71 +128,79 @@ void Renderer<width, height>::framebuffer(
                                       sinAsinB * cosC - cosA * sinC,
                                       cosB * cosC };
 
-    // std::array<sgm::Vec<int, 2>> projectedVertices{};
-    // std::array<sgm::Vec3D> rotatedVertices{};
-    std::vector<sgm::Vec<int, 2>> projectedVertices {};
-    std::vector<sgm::Vec3D> rotatedVertices {};
-    for (std::size_t i {}; i < vertices.size(); ++i) {
-        sgm::Vec3D rotateVertex { vertices[i] * rotationMatrix };
-        rotateVertex.z += m_depth;
-        rotatedVertices.push_back(rotateVertex);
-        // slight optimization by only doing 1 division instead of 2 every frame
-        float ooz { 1 / rotateVertex.z };
-        const sgm::Vec projVertex { project(rotateVertex, ooz) };
-        projectedVertices.push_back(projVertex);
+    int count{};
+    for (const auto& face : faces) {
+        sgm::Vec3D vert1{ vertices[static_cast<std::size_t>(face[0])] };
+        sgm::Vec3D vert2{ vertices[static_cast<std::size_t>(face[1])] };
+        sgm::Vec3D vert3{ vertices[static_cast<std::size_t>(face[2])] };
 
-        // Mapping 2D position to a 1D array, making it projects properly in 2D
-        const std::size_t output { static_cast<std::size_t>(
-            projVertex.x + m_width * projVertex.y) };
-        // populating buffer
-        if (output > 0 && output < m_length && projVertex.x > 0 &&
-            projVertex.x < m_width && projVertex.y > 0 &&
-            projVertex.y < m_height) {
-            if (ooz > m_zb[output]) {
-                m_zb[output] = ooz;
+        // Rotate
+        sgm::Vec3D rotVert1{ vert1 * rotationMatrix };
+        rotVert1.z += m_depth;
+        float ooz1{ 1 / rotVert1.z };
+        sgm::Vec3D rotVert2{ vert2 * rotationMatrix };
+        rotVert2.z += m_depth;
+        float ooz2{ 1 / rotVert2.z };
+        sgm::Vec3D rotVert3{ vert3 * rotationMatrix };
+        rotVert3.z += m_depth;
+        float ooz3{ 1 / rotVert3.z };
+
+        // Project
+        sgm::Vec projVert1{ project(rotVert1, ooz1) };
+        sgm::Vec projVert2{ project(rotVert2, ooz2) };
+        sgm::Vec projVert3{ project(rotVert3, ooz3) };
+
+        // Find face normal
+        sgm::Vec3D vec1{ rotVert2.x - rotVert1.x, rotVert2.y - rotVert1.y, rotVert2.z - rotVert1.z };
+        sgm::Vec3D vec2{ rotVert3.x - rotVert1.x, rotVert3.y - rotVert1.y, rotVert3.z - rotVert1.z };
+        sgm::Vec3D normalVector{ sgm::cross(vec1, vec2) };
+
+        if (normalVector.z < 0) {
+            count++;
+            float luminance{ 11 * sgm::dot(sgm::normalize(normalVector), sgm::normalize(lightPos)) };
+            // Get bounding box
+            // TODO: Optimization where we just need to calculate within the triangle
+            const int minX{ std::min({ projVert1.x, projVert2.x, projVert3.x }) };
+            const int minY{ std::min({ projVert1.y, projVert2.y, projVert3.y }) };
+            const int maxX{ std::max({ projVert1.x, projVert2.x, projVert3.x }) };
+            const int maxY{ std::max({ projVert1.y, projVert2.y, projVert3.y }) };
+
+            float triArea{ static_cast<float>((projVert2.x - projVert1.x) * (projVert3.y - projVert1.y) - (projVert3.x - projVert1.x) * (projVert2.y - projVert1.y)) };
+            if (triArea == 0) continue;
+            for (int row{ minY }; row < maxY; ++row) {
+                for (int col{ minX }; col < maxX; ++col) {
+                    if (col >= m_width || col < 0 || row >= m_height || row < 0) continue;
+
+                    // Check if it's in the triangle or not
+                    const int w1{ Renderer::orient2D(projVert2, projVert3, { col, row }) };
+                    const int w2{ Renderer::orient2D(projVert3, projVert1, { col, row }) };
+                    const int w3{ Renderer::orient2D(projVert1, projVert2, { col, row }) };
+                    if (w1 < 0 || w2 < 0 || w3 < 0) continue;
+
+                    const std::size_t output{ static_cast<std::size_t>(col + row * m_width) };
+                    if (output >= m_length || output < 0) continue;
+
+                    // Get Barycentric Coordinate of any point on triangle
+                    float lambda1{ w1 / (triArea) };
+                    float lambda2{ w2 / (triArea) };
+                    float lambda3{ w3 / (triArea) };
+                    float ooz{ lambda1 * ooz1 + lambda2 * ooz2 + lambda3 * ooz3 };
+                    if (ooz <= m_zb[output]) continue;
+
+                    m_zb[output] = ooz;
+                    m_fb[output] = ".,-~:;=!*#$@"[luminance > 0 ? static_cast<std::size_t>(luminance) : 0];
+                }
             }
         }
     }
-    int count {};
-    for (const auto& face : faces) {
-        // for (std::size_t point {}; point < face.size(); ++point) {
-        //     line(projectedVertices[static_cast<std::size_t>(face[point])],
-        //          projectedVertices[static_cast<std::size_t>(
-        //              face[(point + 1) % face.size()])]);
-        // }
-        sgm::Vec3D vec1 {
-            rotatedVertices[static_cast<std::size_t>(face[1])].x -
-                rotatedVertices[static_cast<std::size_t>(face[0])].x,
-            rotatedVertices[static_cast<std::size_t>(face[1])].y -
-                rotatedVertices[static_cast<std::size_t>(face[0])].y,
-            rotatedVertices[static_cast<std::size_t>(face[1])].z -
-                rotatedVertices[static_cast<std::size_t>(face[0])].z
-        };
-        sgm::Vec3D vec2 {
-            rotatedVertices[static_cast<std::size_t>(face[2])].x -
-                rotatedVertices[static_cast<std::size_t>(face[0])].x,
-            rotatedVertices[static_cast<std::size_t>(face[2])].y -
-                rotatedVertices[static_cast<std::size_t>(face[0])].y,
-            rotatedVertices[static_cast<std::size_t>(face[2])].z -
-                rotatedVertices[static_cast<std::size_t>(face[0])].z
-        };
-        sgm::Vec3D normalVector { sgm::cross(vec1, vec2) };
-        float luminance { 8 * sgm::dot(sgm::normalize(normalVector),
-                                       sgm::normalize(lightPos)) };
-        // if normal vector of the plane points torward the camera, then it is
-        // facing us, then we render it!
-        if (normalVector.z < 0) {
-            count++;
-            std::cout << normalVector.z << '\n';
-            rasterizeTriangle(
-                projectedVertices[static_cast<std::size_t>(face[0])],
-                projectedVertices[static_cast<std::size_t>(face[1])],
-                projectedVertices[static_cast<std::size_t>(face[2])],
-                luminance);
+    for (int y{}; y < m_height; y++) {
+        for (int x{}; x < m_width; x++) {
+            const sgm::Vec grid{ getGridCoordinate(x, y) };
+            SDL_RenderDebugTextFormat(getRawRenderer(), static_cast<float>(grid.x), static_cast<float>(grid.y), "%c", m_fb[x + m_width * y]);
         }
     }
     SDL_RenderDebugTextFormat(this->getRawRenderer(), 10, 700,
-                              "Faces count: %d/%d", count, faces.size());
+                              "Faces count: %d/%d", count, std::ssize(faces));
 }
 
 template <std::size_t width, std::size_t height>
@@ -198,6 +209,7 @@ void Renderer<width, height>::clear()
     SDL_SetRenderDrawColor(this->getRawRenderer(), 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(this->getRawRenderer());
     std::ranges::fill(m_zb, 0);
+    std::ranges::fill(m_fb, ' ');
 }
 
 template <std::size_t width, std::size_t height>
