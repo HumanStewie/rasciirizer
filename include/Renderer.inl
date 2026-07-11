@@ -20,11 +20,13 @@
 template <std::size_t width, std::size_t height>
 void Renderer<width, height>::draw() const
 {
-    for (std::size_t i {}; i <= m_length; ++i) {
-        // check if current char is the final char in the line or not
-        // very clever trick used in Donut in C
-        // you could also just use 2 loops
-        std::cout << (i % static_cast<std::size_t>(m_width) ? m_fb[i] : '\n');
+    for (int y {}; y < m_height; y++) {
+        for (int x {}; x < m_width; x++) {
+            const sgm::Vec grid { getGridCoordinate(x, y) };
+            SDL_RenderDebugTextFormat(
+                getRawRenderer(), static_cast<float>(grid.x),
+                static_cast<float>(grid.y), "%c", m_fb[x + m_width * y]);
+        }
     }
 }
 
@@ -74,20 +76,17 @@ void Renderer<width, height>::rasterizeTriangle(const sgm::Vec<int, 2>& pointA,
     const int maxX { std::max({ pointA.x, pointB.x, pointC.x }) };
     const int maxY { std::max({ pointA.y, pointB.y, pointC.y }) };
 
-    
-
     for (int row { minY }; row < maxY; ++row) {
         for (int col { minX }; col < maxX; ++col) {
             // Check if it's in the triangle or not
             const int w0 { Renderer::orient2D(pointB, pointC, { col, row }) };
             const int w1 { Renderer::orient2D(pointC, pointA, { col, row }) };
             const int w2 { Renderer::orient2D(pointA, pointB, { col, row }) };
-            if (w0 >= 0 && w1 >= 0 && w2 >= 0) {    
+            if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
                 const std::size_t output { static_cast<std::size_t>(
                     col + row * m_width) };
                 if (output > 0 && output < m_length && col > 0 &&
                     col < m_width && row > 0 && row < m_height) {
-
                     const sgm::Vec grid { getGridCoordinate(col, row) };
                     SDL_RenderDebugTextFormat(
                         getRawRenderer(), static_cast<float>(grid.x),
@@ -104,7 +103,7 @@ void Renderer<width, height>::rasterizeTriangle(const sgm::Vec<int, 2>& pointA,
 template <std::size_t width, std::size_t height>
 void Renderer<width, height>::framebuffer(
     const std::vector<sgm::Vec3D>& vertices,
-    const std::vector<std::vector<int>>& faces)
+    const std::vector<sgm::Vec<int, 3>>& faces)
 {
     SDL_SetRenderDrawColor(getRawRenderer(), 255, 255, 255, SDL_ALPHA_OPAQUE);
 
@@ -128,75 +127,92 @@ void Renderer<width, height>::framebuffer(
                                       sinAsinB * cosC - cosA * sinC,
                                       cosB * cosC };
 
-    int count{};
+    int count {};
     for (const auto& face : faces) {
-        sgm::Vec3D vert1{ vertices[static_cast<std::size_t>(face[0])] };
-        sgm::Vec3D vert2{ vertices[static_cast<std::size_t>(face[1])] };
-        sgm::Vec3D vert3{ vertices[static_cast<std::size_t>(face[2])] };
+        sgm::Vec3D vert1 { vertices[static_cast<std::size_t>(face.x)] };
+        sgm::Vec3D vert2 { vertices[static_cast<std::size_t>(face.y)] };
+        sgm::Vec3D vert3 { vertices[static_cast<std::size_t>(face.z)] };
 
         // Rotate
-        sgm::Vec3D rotVert1{ vert1 * rotationMatrix };
+        sgm::Vec3D rotVert1 { vert1 * rotationMatrix };
         rotVert1.z += m_depth;
-        float ooz1{ 1 / rotVert1.z };
-        sgm::Vec3D rotVert2{ vert2 * rotationMatrix };
+        sgm::Vec3D rotVert2 { vert2 * rotationMatrix };
         rotVert2.z += m_depth;
-        float ooz2{ 1 / rotVert2.z };
-        sgm::Vec3D rotVert3{ vert3 * rotationMatrix };
+        sgm::Vec3D rotVert3 { vert3 * rotationMatrix };
         rotVert3.z += m_depth;
-        float ooz3{ 1 / rotVert3.z };
+        if (rotVert3.z <= 0 || rotVert2.z <= 0 || rotVert1.z <= 0) continue;
+
+        float ooz1 { 1 / rotVert1.z };
+        float ooz2 { 1 / rotVert2.z };
+        float ooz3 { 1 / rotVert3.z };
 
         // Project
-        sgm::Vec projVert1{ project(rotVert1, ooz1) };
-        sgm::Vec projVert2{ project(rotVert2, ooz2) };
-        sgm::Vec projVert3{ project(rotVert3, ooz3) };
+        sgm::Vec projVert1 { project(rotVert1, ooz1) };
+        sgm::Vec projVert2 { project(rotVert2, ooz2) };
+        sgm::Vec projVert3 { project(rotVert3, ooz3) };
 
+        std::cout << rotVert1.z << ' ' << rotVert2.z << ' ' << rotVert3.z
+                  << '\n';
         // Find face normal
-        sgm::Vec3D vec1{ rotVert2.x - rotVert1.x, rotVert2.y - rotVert1.y, rotVert2.z - rotVert1.z };
-        sgm::Vec3D vec2{ rotVert3.x - rotVert1.x, rotVert3.y - rotVert1.y, rotVert3.z - rotVert1.z };
-        sgm::Vec3D normalVector{ sgm::cross(vec1, vec2) };
+        sgm::Vec3D vec1 { rotVert2.x - rotVert1.x, rotVert2.y - rotVert1.y,
+                          rotVert2.z - rotVert1.z };
+        sgm::Vec3D vec2 { rotVert3.x - rotVert1.x, rotVert3.y - rotVert1.y,
+                          rotVert3.z - rotVert1.z };
+        sgm::Vec3D normalVector { sgm::cross(vec1, vec2) };
 
         if (normalVector.z < 0) {
             count++;
-            float luminance{ 11 * sgm::dot(sgm::normalize(normalVector), sgm::normalize(lightPos)) };
+            float luminance { 11 * sgm::dot(sgm::normalize(normalVector),
+                                            sgm::normalize(lightPos)) };
             // Get bounding box
-            // TODO: Optimization where we just need to calculate within the triangle
-            const int minX{ std::min({ projVert1.x, projVert2.x, projVert3.x }) };
-            const int minY{ std::min({ projVert1.y, projVert2.y, projVert3.y }) };
-            const int maxX{ std::max({ projVert1.x, projVert2.x, projVert3.x }) };
-            const int maxY{ std::max({ projVert1.y, projVert2.y, projVert3.y }) };
+            // TODO: Optimization where we just need to calculate within the
+            // triangle
+            const int minX { std::min(
+                { projVert1.x, projVert2.x, projVert3.x }) };
+            const int minY { std::min(
+                { projVert1.y, projVert2.y, projVert3.y }) };
+            const int maxX { std::max(
+                { projVert1.x, projVert2.x, projVert3.x }) };
+            const int maxY { std::max(
+                { projVert1.y, projVert2.y, projVert3.y }) };
 
-            float triArea{ static_cast<float>((projVert2.x - projVert1.x) * (projVert3.y - projVert1.y) - (projVert3.x - projVert1.x) * (projVert2.y - projVert1.y)) };
+            float triArea { static_cast<float>(
+                (projVert2.x - projVert1.x) * (projVert3.y - projVert1.y) -
+                (projVert3.x - projVert1.x) * (projVert2.y - projVert1.y)) };
             if (triArea == 0) continue;
-            for (int row{ minY }; row < maxY; ++row) {
-                for (int col{ minX }; col < maxX; ++col) {
-                    if (col >= m_width || col < 0 || row >= m_height || row < 0) continue;
+            for (int row { minY }; row < maxY; ++row) {
+                for (int col { minX }; col < maxX; ++col) {
+                    if (col >= m_width || col < 0 || row >= m_height || row < 0)
+                        continue;
 
                     // Check if it's in the triangle or not
-                    const int w1{ Renderer::orient2D(projVert2, projVert3, { col, row }) };
-                    const int w2{ Renderer::orient2D(projVert3, projVert1, { col, row }) };
-                    const int w3{ Renderer::orient2D(projVert1, projVert2, { col, row }) };
+                    const int w1 { Renderer::orient2D(projVert2, projVert3,
+                                                      { col, row }) };
+                    const int w2 { Renderer::orient2D(projVert3, projVert1,
+                                                      { col, row }) };
+                    const int w3 { Renderer::orient2D(projVert1, projVert2,
+                                                      { col, row }) };
                     if (w1 < 0 || w2 < 0 || w3 < 0) continue;
 
-                    const std::size_t output{ static_cast<std::size_t>(col + row * m_width) };
+                    const std::size_t output { static_cast<std::size_t>(
+                        col + row * m_width) };
                     if (output >= m_length || output < 0) continue;
 
                     // Get Barycentric Coordinate of any point on triangle
-                    float lambda1{ w1 / (triArea) };
-                    float lambda2{ w2 / (triArea) };
-                    float lambda3{ w3 / (triArea) };
-                    float ooz{ lambda1 * ooz1 + lambda2 * ooz2 + lambda3 * ooz3 };
+                    float lambda1 { w1 / (triArea) };
+                    float lambda2 { w2 / (triArea) };
+                    float lambda3 { w3 / (triArea) };
+                    float ooz { lambda1 * ooz1 + lambda2 * ooz2 +
+                                lambda3 * ooz3 };
                     if (ooz <= m_zb[output]) continue;
 
                     m_zb[output] = ooz;
-                    m_fb[output] = ".,-~:;=!*#$@"[luminance > 0 ? static_cast<std::size_t>(luminance) : 0];
+                    m_fb[output] =
+                        ".,-~:;=!*#$@"[luminance > 0
+                                           ? static_cast<std::size_t>(luminance)
+                                           : 0];
                 }
             }
-        }
-    }
-    for (int y{}; y < m_height; y++) {
-        for (int x{}; x < m_width; x++) {
-            const sgm::Vec grid{ getGridCoordinate(x, y) };
-            SDL_RenderDebugTextFormat(getRawRenderer(), static_cast<float>(grid.x), static_cast<float>(grid.y), "%c", m_fb[x + m_width * y]);
         }
     }
     SDL_RenderDebugTextFormat(this->getRawRenderer(), 10, 700,
@@ -214,12 +230,13 @@ void Renderer<width, height>::clear()
 
 template <std::size_t width, std::size_t height>
 void Renderer<width, height>::render(const std::vector<sgm::Vec3D>& vertices,
-                                     const std::vector<std::vector<int>>& fs)
+                                     const std::vector<sgm::Vec<int, 3>>& fs)
 {
     A += 0.07f;
     B += 0.03f;
     C += 0.05f;
     clear();
     framebuffer(vertices, fs);
+    draw();
     SDL_RenderPresent(this->getRawRenderer());
 }

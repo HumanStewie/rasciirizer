@@ -1,9 +1,11 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
+#include <vector>
+
+#include "AssetImporter.h"
 #include "Renderer.h"
 #include "Window.h"
-#include "penger.h"
 
 constexpr int WINDOW_HEIGHT { 720 };
 constexpr int WINDOW_WIDTH { 1280 };
@@ -18,6 +20,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
         return -1;
     }
 
+    std::vector<sgm::Vec3D> vs {};
+    std::vector<sgm::Vec<int, 3>> fs {};
+    AssetImporter importer { vs, fs };
+    importer.parseObj(argv[1]);
+
     const Window gameWindow { WINDOW_WIDTH, WINDOW_HEIGHT };
     bool running { true };
     SDL_Event event;
@@ -25,6 +32,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     Renderer<WINDOW_WIDTH / CHAR_WIDTH, WINDOW_HEIGHT / CHAR_HEIGHT> renderer {
         DEPTH, gameWindow.getRawWindow(), WINDOW_WIDTH, WINDOW_HEIGHT
     };
+
     while (running) {
         const Uint32 tick { static_cast<Uint32>(SDL_GetTicks()) };
         while (SDL_PollEvent(&event)) {
