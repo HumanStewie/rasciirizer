@@ -28,6 +28,12 @@ void Renderer<width, height>::draw() const
                 static_cast<float>(grid.y), "%c", m_fb[x + m_width * y]);
         }
     }
+    //for (std::size_t i{}; i <= m_length; ++i) {
+    //    // check if current char is the final char in the line or not
+    //    // very clever trick used in Donut in C
+    //    // you could also just use 2 loops
+    //    std::cout << (i % static_cast<std::size_t>(m_width) ? m_fb[i] : '\n');
+    //}
 }
 
 template <std::size_t width, std::size_t height>
@@ -151,15 +157,15 @@ void Renderer<width, height>::framebuffer(
         sgm::Vec projVert2 { project(rotVert2, ooz2) };
         sgm::Vec projVert3 { project(rotVert3, ooz3) };
 
-        std::cout << rotVert1.z << ' ' << rotVert2.z << ' ' << rotVert3.z
-                  << '\n';
+        //std::cout << rotVert1.z << ' ' << rotVert2.z << ' ' << rotVert3.z
+        //          << '\n';
         // Find face normal
         sgm::Vec3D vec1 { rotVert2.x - rotVert1.x, rotVert2.y - rotVert1.y,
                           rotVert2.z - rotVert1.z };
         sgm::Vec3D vec2 { rotVert3.x - rotVert1.x, rotVert3.y - rotVert1.y,
                           rotVert3.z - rotVert1.z };
         sgm::Vec3D normalVector { sgm::cross(vec1, vec2) };
-
+        
         if (normalVector.z < 0) {
             count++;
             float luminance { 11 * sgm::dot(sgm::normalize(normalVector),
@@ -167,19 +173,23 @@ void Renderer<width, height>::framebuffer(
             // Get bounding box
             // TODO: Optimization where we just need to calculate within the
             // triangle
-            const int minX { std::min(
+            int minX { std::min(
                 { projVert1.x, projVert2.x, projVert3.x }) };
-            const int minY { std::min(
+            int minY { std::min(
                 { projVert1.y, projVert2.y, projVert3.y }) };
-            const int maxX { std::max(
+            int maxX { std::max(
                 { projVert1.x, projVert2.x, projVert3.x }) };
-            const int maxY { std::max(
+            int maxY { std::max(
                 { projVert1.y, projVert2.y, projVert3.y }) };
-
+            if (minX < 0) minX = 0;
+            if (minY < 0) minY = 0;
+            if (maxX > m_width) maxX = m_width;
+            if (maxY > m_height) maxY = m_height;
             float triArea { static_cast<float>(
                 (projVert2.x - projVert1.x) * (projVert3.y - projVert1.y) -
                 (projVert3.x - projVert1.x) * (projVert2.y - projVert1.y)) };
             if (triArea == 0) continue;
+            
             for (int row { minY }; row < maxY; ++row) {
                 for (int col { minX }; col < maxX; ++col) {
                     if (col >= m_width || col < 0 || row >= m_height || row < 0)
@@ -194,8 +204,7 @@ void Renderer<width, height>::framebuffer(
                                                       { col, row }) };
                     if (w1 < 0 || w2 < 0 || w3 < 0) continue;
 
-                    const std::size_t output { static_cast<std::size_t>(
-                        col + row * m_width) };
+                    const std::size_t output { static_cast<std::size_t>(col + row * m_width) };
                     if (output >= m_length || output < 0) continue;
 
                     // Get Barycentric Coordinate of any point on triangle
@@ -204,7 +213,7 @@ void Renderer<width, height>::framebuffer(
                     float lambda3 { w3 / (triArea) };
                     float ooz { lambda1 * ooz1 + lambda2 * ooz2 +
                                 lambda3 * ooz3 };
-                    if (ooz <= m_zb[output]) continue;
+                    if (ooz <= m_zb[output] || ooz < 0) continue;
 
                     m_zb[output] = ooz;
                     m_fb[output] =
@@ -232,9 +241,12 @@ template <std::size_t width, std::size_t height>
 void Renderer<width, height>::render(const std::vector<sgm::Vec3D>& vertices,
                                      const std::vector<sgm::Vec<int, 3>>& fs)
 {
-    A += 0.07f;
-    B += 0.03f;
-    C += 0.05f;
+    A += 0.009f;
+    B += 0.007f;
+    C += 0.006f;
+    //A += 0.07f;
+    //B += 0.03f;
+    //C += 0.05f;
     clear();
     framebuffer(vertices, fs);
     draw();

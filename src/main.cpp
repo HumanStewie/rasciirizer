@@ -23,7 +23,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     std::vector<sgm::Vec3D> vs {};
     std::vector<sgm::Vec<int, 3>> fs {};
     AssetImporter importer { vs, fs };
-    importer.parseObj(argv[1]);
 
     const Window gameWindow { WINDOW_WIDTH, WINDOW_HEIGHT };
     bool running { true };
@@ -32,23 +31,38 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     Renderer<WINDOW_WIDTH / CHAR_WIDTH, WINDOW_HEIGHT / CHAR_HEIGHT> renderer {
         DEPTH, gameWindow.getRawWindow(), WINDOW_WIDTH, WINDOW_HEIGHT
     };
-
+    bool rendering{true};
     while (running) {
-        const Uint32 tick { static_cast<Uint32>(SDL_GetTicks()) };
+        //const Uint32 tick { static_cast<Uint32>(SDL_GetTicks()) };
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT ||
-                (event.type == SDL_EVENT_KEY_DOWN &&
-                 event.key.key == SDLK_ESCAPE)) {
+            switch (event.type) {
+            case SDL_EVENT_QUIT:
                 running = false;
+                break;
+            case SDL_EVENT_KEY_DOWN:
+                if (event.key.key == SDLK_ESCAPE) {
+                    running = false;
+                }
+                break;
+            case SDL_EVENT_WINDOW_FOCUS_LOST:
+                rendering = false;
+                break;
+            case SDL_EVENT_WINDOW_FOCUS_GAINED:
+                rendering = true;
+                break;
+            case SDL_EVENT_DROP_FILE:
+                importer.parseObj(event.drop.data);
+                break;
             }
         }
-        renderer.render(vs, fs);
-        const Uint32 tickAfter { static_cast<Uint32>(SDL_GetTicks()) };
-        const Uint32 tickPassed { tickAfter - tick };
-        const Uint32 amountToWait { FRAME_DURATION - tickPassed };
-        if (amountToWait > 0) {
-            SDL_Delay(amountToWait);
-        }
+        if (rendering)
+            renderer.render(vs, fs);
+        //const Uint32 tickAfter { static_cast<Uint32>(SDL_GetTicks()) };
+        //const Uint32 tickPassed { tickAfter - tick };
+        //const Uint32 amountToWait { FRAME_DURATION - tickPassed };
+        //if (amountToWait > 0) {
+        //    SDL_Delay(amountToWait);
+        //}
     }
 
     SDL_Quit();

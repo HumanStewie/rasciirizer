@@ -1,6 +1,5 @@
 #pragma once
-#include <fribidi/fribidi.h>
-
+#include <string>
 #include <vector>
 
 #include "sgm.h"
