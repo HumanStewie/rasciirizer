@@ -12,7 +12,7 @@ constexpr int WINDOW_WIDTH { 1280 };
 constexpr int CHAR_HEIGHT { 16 };
 constexpr int CHAR_WIDTH { 8 };
 constexpr int FRAME_DURATION { 33 };  // in ms
-constexpr float DEPTH { 1.8f };
+constexpr float DEPTH { 5.8f };
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
@@ -51,12 +51,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
                 rendering = true;
                 break;
             case SDL_EVENT_DROP_FILE:
-                importer.parseObj(event.drop.data);
+                importer.parseGltf(event.drop.data);
                 break;
             }
         }
-        if (rendering)
-            renderer.render(vs, fs);
+        //if (rendering)
+        //    renderer.render(vs, fs);
         //const Uint32 tickAfter { static_cast<Uint32>(SDL_GetTicks()) };
         //const Uint32 tickPassed { tickAfter - tick };
         //const Uint32 amountToWait { FRAME_DURATION - tickPassed };

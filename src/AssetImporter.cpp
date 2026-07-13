@@ -5,12 +5,17 @@
 #include <limits>
 #include <sstream>
 #include <string>
+#include <array>
 
 #include "sgm.h"
+#include "json.hpp"
+
+using json = nlohmann::json;
 
 void AssetImporter::parseObj(const std::string& assetPath)
 {
     std::ifstream asset { assetPath };
+    std::cout << assetPath << '\n';
     std::string line {};
     std::stringstream str {};
     while (std::getline(asset, line)) {
@@ -43,5 +48,23 @@ void AssetImporter::parseObj(const std::string& assetPath)
 
 void AssetImporter::parseGltf(const std::string& assetPath)
 {
+    // .gltf
     std::ifstream asset { assetPath };
+    json data{ json::parse(asset) };
+
+    int positionAccessor{ data["accessors"][data["meshes"][0]["primitives"][0]["attributes"]["POSITION"]]};
+    int positionBufferView{ data["bufferViews"][positionAccessor["bufferView"]]};
+    int positionBuffer{ data["buffers"][positionBufferView["buffer"]] };
+
+    std::string binaryPath{ assetPath };
+    binaryPath.replace(assetPath.size() - 3, assetPath.size(), "bin");
+    std::ifstream bin{ binaryPath, std::ios::binary };
+
+    bin.seekg(0, std::ios::end);
+    int binaryLength{ static_cast<int>(bin.tellg()) };
+    bin.seekg(0, std::ios::beg);
+
+    std::vector<char> binaryFile(binaryLength);
+    bin.read(binaryFile.data(), binaryLength);
+
 }
